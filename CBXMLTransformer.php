@@ -22,8 +22,11 @@
  * in which only slight modifications to the XML string are necessary.
  * See doc comments for CBXMLTransformer::transformString() for
  * information on usage.
- * @package CBTools
+ * @package CBXMLTransformer
  * @author Carsten Bluem <carsten@bluem.net>
+ * @copyright 2008-2012 Carsten Bluem <carsten@bluem.net>
+ * @license http://www.opensource.org/licenses/bsd-license.php  BSD License
+ * @link http://bluem.net/
  * @version SVN: $Id: CBXMLTransformer.php 104 2012-02-26 10:25:35Z cb $
  */
 class CBXMLTransformer {
