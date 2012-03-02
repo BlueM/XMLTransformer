@@ -8,6 +8,7 @@ CBXMLTransformer is a PHP class for transforming any kind of input XML into an o
 What can it do?
 ----------------
 CBXMLTransformer is able to …
+
 * Remove tags, with or without the tag’ content
 * Rename attributes
 * Insert attributes
