@@ -29,4 +29,15 @@ When the input data has to be re-arranged, you are probably better off with XSL-
 Examples
 ===========
 
+Hello world
+------------
+	echo CBXMLTransformer::transformString(
+		'<root><element>Hello world</element></root>',
+		function($tag, $attributes, $opening) {
+			return array('tag'=>false);
+		}
+	);
+
+Other examples
+--------------
 Coming soon ...
