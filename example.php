@@ -27,8 +27,15 @@
 		'<root><hello-world xml:lang="de" /></root>',
 		'transform'
 	);
+	// Will output “Hallo Welt”
 
 	echo CBXMLTransformer::transformString(
 		'<root><hello-world xml:lang="en" /></root>',
 		'transform'
 	);
+	// Will output “Hello world”
+
+	// Explanation: In addition to the last example, we return
+	//              key “insbefore”, which will insert literal content,
+	//              which in this example is set based on the xml:lang
+	//              attribute.
