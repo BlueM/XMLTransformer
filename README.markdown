@@ -9,7 +9,7 @@ What kind of transformations can it perform?
 ----------------
 CBXMLTransformer is able to …
 
-* Remove tags, with or without the tag’ content
+* Remove tags, including or excluding the tag’s content
 * Rename attributes
 * Remove attributes
 * Add attributes
@@ -21,7 +21,7 @@ CBXMLTransformer is able to …
 
 What is it good for?
 --------------------
-In my opinion, CBXMLTransformer performs very well if the input XML and the output to be produced are similarly structured. Moreover, if data from the input XML has to be processed by an existing PHP codebase, it is probably cleaner to use CBXMLTransformer instead of XSL-T.
+In my opinion, CBXMLTransformer performs very well if the input XML and the output to be produced are similarly structured. Moreover, if data from the input XML has to be processed by an existing PHP codebase, it is possibly cleaner and simpler to use CBXMLTransformer instead of XSL-T.
 
 What is it not so good for?
 ----------------------------
@@ -29,7 +29,7 @@ When the input data has to be re-arranged, you are probably better off with XSL-
 
 How does it work
 -----------------
-You pass the input XML and a callback function (or callback method or a closure) to CBXMLTransformer. For each tag (opening, closing or empty) the callback function will be called with the tag’s data as argument. The callback function returns, based on the given data, an array that contains information on the desired tag (should the tag be renamed, removed, and if the latter: with or without content?), on the desired attributes (removal, addition, renaming), on adding literal content and a closure that will be called after the transformation has been performed. All of the aforementioned return information is optional, and if you do not return anything, nothing is changed.
+You pass the input XML and the name of a callback function (or the name of a callback method or a closure) to CBXMLTransformer. For each tag (opening, closing or empty) the callback function will be called with the tag’s data as argument. The callback function returns – based on the given data – an array that contains information on the desired tag (should the tag be renamed, removed, and if the latter: with or without content?), on the desired attributes (removal, addition, renaming), on adding literal content and a closure that will be called after the transformation has been performed. All of the aforementioned return information is optional, and if you do not return anything, nothing is changed.
 
 Examples
 ===========
