@@ -66,7 +66,7 @@ Multilingual Hello world
 		}
 
 		if ('root' == $tag) {
-			// We do not want ent enclosing <root> tags in the output
+			// We do not want the enclosing <root> tags in the output
 			return array('tag'=>false);
 		}
 	}
@@ -88,6 +88,47 @@ Multilingual Hello world
 	//              which in this example is set based on the xml:lang
 	//              attribute.
 
+
+Removing tags including all of their content
+--------------------------------------------
+	echo CBXMLTransformer::transformString(
+		'<root><remove>Hello</remove><keep>World</keep>.</root>',
+			function($tag, $attributes, $opening) {
+				switch ($tag) {
+					case 'remove':
+						// Returning false will remove the tag
+						// and everything inside it.
+						return false;
+					case 'root':
+					case 'keep':
+						// Returning false as value of the array
+						// key "tag" will remove the tag, but keep
+						// its content.
+						return array('tag'=>false);
+						break;
+					default:
+						// Returning null is not necessary, as this
+						// is the default behaviour. It is equivalent
+						// to "Do not change anything."
+						return null;
+				}
+			}
+	);
+	// Will output “World.”
+
+Renaming attributes
+-------------------
+	echo CBXMLTransformer::transformString(
+		'<root xml:id="abc"><bla xml:id="def"/></root>',
+			function($tag, $attributes, $opening) {
+				// The next line means "Rename the attribute from
+				// 'xml:id' to 'id'
+				return array('@xml:id'=>'@id');
+			}
+	);
+	// Will output “<root id="abc"><bla id="def" /></root>”
+	// Please note that empty tags will always be returned with
+	// a space before the slash.
 
 
 Other examples
