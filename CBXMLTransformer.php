@@ -109,7 +109,7 @@ class CBXMLTransformer {
 	 */
 	public static function transformString($xml, $callback) {
 
-		$xmltr = new self;
+		$xmltr = new static;
 
 		if (!self::checkCallback($callback)) {
 			throw new InvalidArgumentException('Callback must be function, method or closure');
@@ -131,10 +131,10 @@ class CBXMLTransformer {
 					break;
 				case (XMLReader::SIGNIFICANT_WHITESPACE):
 				case (XMLReader::WHITESPACE):
-					$xmltr->nodeContent($r);
+					$xmltr->nodeContent($r->value);
 					break;
 				case (XMLREADER::TEXT):
-					$xmltr->nodeContent($r);
+					$xmltr->nodeContent(htmlspecialchars($r->value));
 			}
 		}
 
@@ -282,15 +282,14 @@ class CBXMLTransformer {
 
 	/**
 	 * Returns the node's text content
-	 * @param XMLReader $r
+	 * @param string $content String or whitespace content, with XML
+	 *                        special characters esacaped.
 	 */
-	protected function nodeContent(XMLReader $r) {
+	protected function nodeContent($content) {
 
 		if ($this->insideIgnorableTag) {
 			return;
 		}
-
-		$content = htmlspecialchars($r->value);
 
 		if (0 < $count = count($this->transformerStack)) {
 			// Add content to transformation stack
