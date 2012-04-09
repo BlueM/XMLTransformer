@@ -29,7 +29,7 @@ When the input data has to be re-arranged, you are probably better off with XSL-
 
 How does it work
 -----------------
-You pass the input XML and the name of a callback function (or the name of a callback method or a closure) to CBXMLTransformer. For each tag (opening, closing or empty) the callback function will be called with the tag’s data as argument. The callback function returns – based on the given data – an array that contains information on the desired tag (should the tag be renamed, removed, and if the latter: with or without content?), on the desired attributes (removal, addition, renaming), on adding literal content and a closure that will be called after the transformation has been performed. All of the aforementioned return information is optional, and if you do not return anything, nothing is changed.
+You pass the input XML and the name of a callback function (or the name of a callback method or a closure) to CBXMLTransformer. For each tag (opening, closing or empty) the callback function will be called with the tag’s data as argument and information on whether it is an opening, empty or closing tag. The callback function returns – based on the given data – an array that contains information on the desired tag (should the tag be renamed, removed, and if the latter: with or without content?), on the desired attributes (removal, addition, renaming), on adding literal content and a closure that will be called after the transformation has been performed. All of the aforementioned return information is optional, and if you do not return anything or null, nothing is changed.
 
 Examples
 ===========

@@ -19,17 +19,18 @@
  *     to a user-defined closure
  *  -- perform any combination of the above
  * Hence, it can be regarded as an alternative to XSL-T especially for cases
- * in which only slight modifications to the XML string are necessary.
- * See doc comments for CBXMLTransformer::transformString() for
- * information on usage.
+ * in which only slight modifications to the XML string are necessary. See doc
+ * comments for CBXMLTransformer::transformString() for information on usage.
  * @package CBXMLTransformer
  * @author Carsten Bluem <carsten@bluem.net>
  * @copyright 2008-2012 Carsten Bluem <carsten@bluem.net>
  * @license http://www.opensource.org/licenses/bsd-license.php  BSD License
- * @link http://bluem.net/
- * @version SVN: $Id: CBXMLTransformer.php 104 2012-02-26 10:25:35Z cb $
  */
 class CBXMLTransformer {
+
+	const ELOPEN = 1;
+	const ELEMPTY = 2;
+	const ELCLOSE = 0;
 
 	/**
 	 * Flag: are we currently in a part of the XML tree that's
@@ -156,23 +157,19 @@ class CBXMLTransformer {
 			return;
 		}
 
-		$attributes = array();
-		if ($r->hasAttributes) {
-			$r->moveToFirstAttribute();
-			do {
-				$attributes[($r->prefix ? $r->prefix.':' : '').$r->localName] = $r->value;
-			} while ($r->moveToNextAttribute());
-			$r->moveToElement();
-		}
+		$attributes = $this->getAttributes($r);
 
 		if (!$r->isEmptyElement) {
 			// Remember the attributes, so the closing tag can access them, too
 			$this->stack[] = $attributes;
+			$type = self::ELEMPTY;
+		} else {
+			$type = self::ELOPEN;
 		}
 
 		$name = $r->prefix ? $r->prefix.':'.$r->localName : $r->localName;
 
-		if (false === $trnsf = call_user_func_array($this->callback, array($name, $attributes, true))) {
+		if (false === $trnsf = call_user_func_array($this->callback, array($name, $attributes, $type))) {
 			if (!$r->isEmptyElement) {
 				$this->insideIgnorableTag ++;
 			}
@@ -249,7 +246,7 @@ class CBXMLTransformer {
 
 		$name = $r->prefix ? $r->prefix.':'.$r->localName : $r->localName;
 
-		if (false === $trnsf = call_user_func_array($this->callback, array($name, $attributes, false))) {
+		if (false === $trnsf = call_user_func_array($this->callback, array($name, $attributes, self::ELCLOSE))) {
 			return;
 		} elseif (null === $trnsf) {
 			$trnsf = array();
@@ -336,6 +333,24 @@ class CBXMLTransformer {
 		}
 
 		return false;
+	}
+
+	/**
+	 * Returns the given node's attributes as an associative array
+	 * @param XMLReader $r
+	 * @return array
+	 */
+	protected function getAttributes(XMLReader $r) {
+		if (!$r->hasAttributes) {
+			return array();
+		}
+		$attributes = array();
+		$r->moveToFirstAttribute();
+		do {
+			$attributes[($r->prefix ? $r->prefix.':' : '').$r->localName] = $r->value;
+		} while ($r->moveToNextAttribute());
+		$r->moveToElement();
+		return $attributes;
 	}
 
 	/**
