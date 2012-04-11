@@ -44,7 +44,6 @@ class CBXMLTransformerTest extends PHPUnit_Framework_TestCase {
 	 * @test
 	 * @expectedException InvalidArgumentException
 	 * @expectedExceptionMessage Invalid callback function
-	 * @covers CBXMLTransformer::transformString
 	 */
 	function invokingTheTransformerWithAnInvalidCallbackFunctionThrowsAnException() {
 		CBXMLTransformer::transformString(
@@ -55,7 +54,6 @@ class CBXMLTransformerTest extends PHPUnit_Framework_TestCase {
 
 	/**
 	 * @test
-	 * @covers CBXMLTransformer::transformString
 	 */
 	function invokeTheTransformerWithAValidCallbackFunction() {
 		$actual = CBXMLTransformer::transformString(
@@ -69,7 +67,6 @@ class CBXMLTransformerTest extends PHPUnit_Framework_TestCase {
 	 * @test
 	 * @expectedException InvalidArgumentException
 	 * @expectedExceptionMessage it must have exactly 2
-	 * @covers CBXMLTransformer::transformString
 	 */
 	function invokingTheTransformerWithAnUnusableMethodArrayThrowsAnException() {
 		CBXMLTransformer::transformString(
@@ -82,7 +79,6 @@ class CBXMLTransformerTest extends PHPUnit_Framework_TestCase {
 	 * @test
 	 * @expectedException InvalidArgumentException
 	 * @expectedExceptionMessage Invalid callback method
-	 * @covers CBXMLTransformer::transformString
 	 */
 	function invokingTheTransformerWithAnInvalidArrayThrowsAnException() {
 		CBXMLTransformer::transformString(
@@ -93,7 +89,6 @@ class CBXMLTransformerTest extends PHPUnit_Framework_TestCase {
 
 	/**
 	 * @test
-	 * @covers CBXMLTransformer::transformString
 	 */
 	function invokeTheTransformerWithAValidCallbackMethod() {
 		$actual = CBXMLTransformer::transformString(
@@ -107,7 +102,6 @@ class CBXMLTransformerTest extends PHPUnit_Framework_TestCase {
 	 * @test
 	 * @expectedException InvalidArgumentException
 	 * @expectedExceptionMessage Callback must be function, method or closure
-	 * @covers CBXMLTransformer::transformString
 	 */
 	function invokingTheTransformerWithCrapAsCallbackThrowsAnException() {
 		CBXMLTransformer::transformString('<xml></xml>', new stdClass);
@@ -117,7 +111,6 @@ class CBXMLTransformerTest extends PHPUnit_Framework_TestCase {
 	 * @test
 	 * @expectedException UnexpectedValueException
 	 * @expectedExceptionMessage Unexpected key "unexpected" in array returned
-	 * @covers CBXMLTransformer::nodeOpen
 	 */
 	function returningAnUnexpectedArrayKeyThrowsAnException() {
 		CBXMLTransformer::transformString(
@@ -129,8 +122,6 @@ class CBXMLTransformerTest extends PHPUnit_Framework_TestCase {
 			}
 		);
 	}
-
-	// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 	/**
 	 * @test
@@ -226,8 +217,6 @@ class CBXMLTransformerTest extends PHPUnit_Framework_TestCase {
 		$this->assertSame($exp, $actual);
 	}
 
-	// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
 	/**
 	 * @test
 	 */
@@ -287,8 +276,6 @@ class CBXMLTransformerTest extends PHPUnit_Framework_TestCase {
 
 		$this->assertSame($exp, $actual);
 	}
-
-	// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 	/**
 	 * @test
@@ -365,8 +352,6 @@ class CBXMLTransformerTest extends PHPUnit_Framework_TestCase {
 
 		$this->assertSame($exp, $actual);
 	}
-
-	// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 	/**
 	 * @test
@@ -567,8 +552,6 @@ __EXP1__;
 		);
 		$this->assertSame($exp, $actual);
 	}
-
-	// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 	/**
 	 * @test
@@ -778,8 +761,6 @@ __EXP1__;
 		$this->assertSame($exp, $actual);
 	}
 
-	// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
 	/**
 	 * @test
 	 */
@@ -842,8 +823,6 @@ __XML1__;
 		$this->assertSame($xml, $actual);
 	}
 
-	// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
 	/**
 	 * @test
 	 */
@@ -872,8 +851,6 @@ __XML2__;
 		);
 		$this->assertSame($expected, $actual);
 	}
-
-	// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 	/**
 	 * @test
