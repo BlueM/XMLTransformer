@@ -1,31 +1,13 @@
 <?php
 
-include_once 'CBXMLTransformer.php';
-
-class TestObject {
-
-	protected function unaccessible() { }
-
-	static function transform($tag, $attributes, $opening) {
-		return array(
-			'tag'=>false,
-			'insstart'=>"Callback method was called for <$tag>",
-		);
-	}
-}
-
-function valid_function($tag, $attributes, $opening) {
-	return array(
-		'tag'=>false,
-		'insstart'=>"Callback function was called for <$tag>",
-	);
-}
+require_once 'CBXMLTransformer.php';
 
 /**
  * Test class for CBXMLTransformer.
- * @package TETool
- * @subpackage Tests
- * @version SVN: $Id: CBXMLTransformerTest.php 101 2012-01-17 15:21:18Z cb $
+ * @package CBXMLTransformer
+ * @author Carsten Bluem <carsten@bluem.net>
+ * @copyright 2008-2012 Carsten Bluem <carsten@bluem.net>
+ * @license http://www.opensource.org/licenses/bsd-license.php  BSD License
  */
 class CBXMLTransformerTest extends PHPUnit_Framework_TestCase {
 
@@ -913,5 +895,24 @@ __XML1__;
 		$this->assertSame('', trim($actual));
 	}
 
+}
+
+class TestObject {
+
+	protected function unaccessible() { }
+
+	static function transform($tag, $attributes, $opening) {
+		return array(
+			'tag'=>false,
+			'insstart'=>"Callback method was called for <$tag>",
+		);
+	}
+}
+
+function valid_function($tag, $attributes, $opening) {
+	return array(
+		'tag'=>false,
+		'insstart'=>"Callback function was called for <$tag>",
+	);
 }
 
