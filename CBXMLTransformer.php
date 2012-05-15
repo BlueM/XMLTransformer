@@ -144,8 +144,8 @@ class CBXMLTransformer {
 	}
 
 	/**
-	 * Method that will be invoked for any opening or empty XML element
-	 * @param XMLReader $r instance.
+	 * Method that will be invoked for any opening or empty XML element.
+	 * @param XMLReader $r
 	 * @throws UnexpectedValueException
 	 */
 	protected function nodeOpen(XMLReader $r) {
@@ -278,7 +278,7 @@ class CBXMLTransformer {
 	}
 
 	/**
-	 * Returns the node's text content
+	 * Saves the node's text content
 	 * @param string $content String or whitespace content, with XML
 	 *                        special characters esacaped.
 	 */

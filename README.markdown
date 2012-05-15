@@ -18,6 +18,7 @@ CBXMLTransformer is able to …
 * Insert content at the beginning or end of tag content
 * Transform a tag including all of its content by passing it to a user-defined closure
 * Perform any combination of the above
+* Modify the content of text nodes
 
 What is it good for?
 --------------------
@@ -30,6 +31,8 @@ When the input data has to be re-arranged, you are probably better off with XSL-
 How does it work
 -----------------
 You pass the input XML and the name of a callback function (or the name of a callback method or a closure) to CBXMLTransformer. For each tag (opening, closing or empty) the callback function will be called with the tag’s data as argument and information on whether it is an opening, empty or closing tag. The callback function returns – based on the given data – an array that contains information on the desired tag (should the tag be renamed, removed, and if the latter: with or without content?), on the desired attributes (removal, addition, renaming), on adding literal content and a closure that will be called after the transformation has been performed. All of the aforementioned return information is optional, and if you do not return anything or null, nothing is changed.
+
+If you need to perform modification of text nodes’ content, you may prefer to subclass CBXMLTransformer and overwrite the nodeContent() method. See below for an example.
 
 Examples
 ===========
@@ -131,6 +134,33 @@ Renaming attributes
 	// a space before the slash.
 
 
-Other examples
---------------
-Coming soon …
+Modifying content by subclassing
+--------------------------------
+Some time ago, I had the task to publish a TEI (www.tei-c.org) XML document which contained characters with accents in Latin parts of the text. The accents should not be removed from the source document, but should not be presented in the resulting application. Solution: Subclass CBXMLTransformer, overwrite nodeContent() and perform the desired normalization, if the current element or one of its ancestors has an @xml:lang attribute value of “la”.
+
+This is the code:
+
+	class NoLatinAccentsXMLTransformer extends CBXMLTransformer {
+
+		protected function nodeContent($content) {
+	
+			// Get the current node's attributes
+			for ($i = count($this->stack); $i >= 0; $i --) {
+				if (empty($this->stack[$i]['xml:lang'])) {
+					// Keep on traversing the array until we find the
+					// nearest ancestor node with an @xml:lang attribute
+					continue;
+				}
+				break;
+			}
+	
+			if ('la' == $this->stack[$i]['xml:lang']) {
+				// We are currently in Latin context.
+				// Do the normalization by modifying $content.
+			}
+	
+			parent::nodeContent($content);
+		}
+	
+	}
+
