@@ -1,6 +1,6 @@
 <?php
 
-require_once 'CBXMLTransformer.php';
+require_once __DIR__.'/../CBXMLTransformer.php';
 
 /**
  * Test class for CBXMLTransformer.
@@ -829,6 +829,22 @@ __XML2__;
 					return false;
 				}
 
+			}
+		);
+		$this->assertSame($expected, $actual);
+	}
+
+	/**
+	 * @test
+	 */
+	function testIfEscapedSpecialCharactersRemainUnmodifiedInAttributeValues() {
+
+		$xml = '<root><test attr="&amp; &lt; &gt;">Foo</test></root>';
+		$expected = '<root><test attr="&amp; &lt; &gt;">Foo</test></root>';
+		$actual = CBXMLTransformer::transformString(
+			$xml,
+			function($tag, $attributes, $opening) {
+				// No modification
 			}
 		);
 		$this->assertSame($expected, $actual);
