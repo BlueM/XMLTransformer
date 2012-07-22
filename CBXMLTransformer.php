@@ -327,8 +327,8 @@ class CBXMLTransformer {
 		}
 
 		if (is_object($callback) and
-		    is_callable($callback)) {
-			// Closure or other callable object
+		    is_a($callback, 'Closure')) {
+			// Closure
 			return true;
 		}
 
@@ -377,7 +377,7 @@ class CBXMLTransformer {
 				unset($trnsf["@$attrname"]);
 			} else {
 				// Default behaviour: copy attribute and value
-				$tag .= sprintf(' %s="%s"', $attrname, htmlspecialchars($value));
+				$tag .= sprintf(' %s="%s"', $attrname, $value);
 			}
 		}
 
