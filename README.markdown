@@ -3,7 +3,8 @@ CBXMLTransformer Overview
 
 What is it?
 --------------
-CBXMLTransformer is a PHP class for transforming any kind of input XML into an output string. This output string does not have to be XML, but also, for instance, HTML or plain text.
+CBXMLTransformer is a PHP class for transforming any kind of input XML into an output string. This output string does not have to be XML, but can also be, for instance, HTML or plain text.
+
 
 What kind of transformations can it perform?
 ----------------
@@ -136,7 +137,7 @@ Renaming attributes
 
 Modifying content by subclassing
 --------------------------------
-Some time ago, I had the task to publish a TEI (www.tei-c.org) XML document which contained characters with accents in Latin parts of the text. The accents should not be removed from the source document, but should not be presented in the resulting application. Solution: Subclass CBXMLTransformer, overwrite nodeContent() and perform the desired normalization, if the current element or one of its ancestors has an @xml:lang attribute value of “la”.
+Some time ago, I had the task of publishing a TEI (www.tei-c.org) XML document which contained characters with accents in Latin parts of the text. The accents should not be removed from the source document, but should not be presented in the resulting application. Solution: Subclass CBXMLTransformer, overwrite nodeContent() and perform the desired normalization, if the current element or one of its ancestors has an @xml:lang attribute value of “la”.
 
 This is the code:
 
