@@ -1,6 +1,6 @@
 <?php
 
-require_once __DIR__.'/../CBXMLTransformer.php';
+require_once __DIR__.'/CBXMLTransformer.php';
 
 /**
  * Test class for CBXMLTransformer.
@@ -13,9 +13,9 @@ class CBXMLTransformerTest extends PHPUnit_Framework_TestCase {
 
 	/**
 	 * @test
-	 * @expectedException PHPUnit_Framework_Error_Warning
+ 	 * @expectedException PHPUnit_Framework_Error_Warning
 	 */
-	function invokingTheTransformerWithInvalidXml() {
+	function invokingTheTransformerWithInvalidXmlProducesAnError() {
 		CBXMLTransformer::transformString(
 			'<xml></xl>',
 			function() { }
