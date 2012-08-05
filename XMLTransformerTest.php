@@ -1,22 +1,23 @@
 <?php
 
-require_once __DIR__.'/CBXMLTransformer.php';
+use BlueM\XMLTransformer;
+
+require_once __DIR__.'/XMLTransformer.php';
 
 /**
- * Test class for CBXMLTransformer.
- * @package CBXMLTransformer
+ * Test class for XMLTransformer.
+ * @package XMLTransformer
  * @author Carsten Bluem <carsten@bluem.net>
- * @copyright 2008-2012 Carsten Bluem <carsten@bluem.net>
  * @license http://www.opensource.org/licenses/bsd-license.php  BSD License
  */
-class CBXMLTransformerTest extends PHPUnit_Framework_TestCase {
+class XMLTransformerTest extends PHPUnit_Framework_TestCase {
 
 	/**
 	 * @test
  	 * @expectedException PHPUnit_Framework_Error_Warning
 	 */
 	function invokingTheTransformerWithInvalidXmlProducesAnError() {
-		CBXMLTransformer::transformString(
+		XMLTransformer::transformString(
 			'<xml></xl>',
 			function() { }
 		);
@@ -28,7 +29,7 @@ class CBXMLTransformerTest extends PHPUnit_Framework_TestCase {
 	 * @expectedExceptionMessage Invalid callback function
 	 */
 	function invokingTheTransformerWithAnInvalidCallbackFunctionThrowsAnException() {
-		CBXMLTransformer::transformString(
+		XMLTransformer::transformString(
 			'<xml></xml>',
 			'nonexistentfunction'
 		);
@@ -38,7 +39,7 @@ class CBXMLTransformerTest extends PHPUnit_Framework_TestCase {
 	 * @test
 	 */
 	function invokeTheTransformerWithAValidCallbackFunction() {
-		$actual = CBXMLTransformer::transformString(
+		$actual = XMLTransformer::transformString(
 			'<xml></xml>',
 			'valid_function'
 		);
@@ -51,7 +52,7 @@ class CBXMLTransformerTest extends PHPUnit_Framework_TestCase {
 	 * @expectedExceptionMessage it must have exactly 2
 	 */
 	function invokingTheTransformerWithAnUnusableMethodArrayThrowsAnException() {
-		CBXMLTransformer::transformString(
+		XMLTransformer::transformString(
 			'<xml></xml>',
 			array('stdClass')
 		);
@@ -63,7 +64,7 @@ class CBXMLTransformerTest extends PHPUnit_Framework_TestCase {
 	 * @expectedExceptionMessage Invalid callback method
 	 */
 	function invokingTheTransformerWithAnInvalidArrayThrowsAnException() {
-		CBXMLTransformer::transformString(
+		XMLTransformer::transformString(
 			'<xml></xml>',
 			array('TestObject', 'unaccessible')
 		);
@@ -73,7 +74,7 @@ class CBXMLTransformerTest extends PHPUnit_Framework_TestCase {
 	 * @test
 	 */
 	function invokeTheTransformerWithAValidCallbackMethod() {
-		$actual = CBXMLTransformer::transformString(
+		$actual = XMLTransformer::transformString(
 			'<xml></xml>',
 			array('TestObject', 'transform')
 		);
@@ -86,7 +87,7 @@ class CBXMLTransformerTest extends PHPUnit_Framework_TestCase {
 	 * @expectedExceptionMessage Callback must be function, method or closure
 	 */
 	function invokingTheTransformerWithCrapAsCallbackThrowsAnException() {
-		CBXMLTransformer::transformString('<xml></xml>', new stdClass);
+		XMLTransformer::transformString('<xml></xml>', new stdClass);
 	}
 
 	/**
@@ -95,7 +96,7 @@ class CBXMLTransformerTest extends PHPUnit_Framework_TestCase {
 	 * @expectedExceptionMessage Unexpected key "unexpected" in array returned
 	 */
 	function returningAnUnexpectedArrayKeyThrowsAnException() {
-		CBXMLTransformer::transformString(
+		XMLTransformer::transformString(
 			'<root></root>',
 			function($tag, $attributes, $opening) {
 				return array(
@@ -114,7 +115,7 @@ class CBXMLTransformerTest extends PHPUnit_Framework_TestCase {
 		       "<empty />\n".
 		       "</root>";
 
-		$actual = CBXMLTransformer::transformString(
+		$actual = XMLTransformer::transformString(
 			$xml,
 			function($tag, $attributes, $opening) {
 				return array();
@@ -134,13 +135,13 @@ class CBXMLTransformerTest extends PHPUnit_Framework_TestCase {
 		       "<empty />\n".
 		       "</root>";
 
-		$actual = CBXMLTransformer::transformString(
+		$actual = XMLTransformer::transformString(
 			$xml,
 			function($tag, $attributes, $opening) { }
 		);
 		$this->assertSame($xml, $actual);
 
-		$actual = CBXMLTransformer::transformString(
+		$actual = XMLTransformer::transformString(
 			$xml,
 			function($tag, $attributes, $opening) {return null;}
 		);
@@ -157,7 +158,7 @@ class CBXMLTransformerTest extends PHPUnit_Framework_TestCase {
 		       "<empty />\n".
 		       "</root>";
 
-		$actual = CBXMLTransformer::transformString(
+		$actual = XMLTransformer::transformString(
 			$xml,
 			function($tag, $attributes, $opening) {
 				if ('ignore' == $tag) {
@@ -182,7 +183,7 @@ class CBXMLTransformerTest extends PHPUnit_Framework_TestCase {
 		       "<empty />\n".
 		       "</root>";
 
-		$actual = CBXMLTransformer::transformString(
+		$actual = XMLTransformer::transformString(
 			$xml,
 			function($tag, $attributes, $opening) {
 				if ('element' == $tag) {
@@ -213,7 +214,7 @@ class CBXMLTransformerTest extends PHPUnit_Framework_TestCase {
 		       "<b />\n".
 		       "</toplevel>";
 
-		$actual = CBXMLTransformer::transformString(
+		$actual = XMLTransformer::transformString(
 			$xml,
 			function($tag, $attributes, $opening) {
 				if ('root' == $tag) {
@@ -247,7 +248,7 @@ class CBXMLTransformerTest extends PHPUnit_Framework_TestCase {
 		       "<foo>Should not be changed</foo>\n".
 		       "</TEI>";
 
-		$actual = CBXMLTransformer::transformString(
+		$actual = XMLTransformer::transformString(
 			$xml,
 			function($tag, $attributes, $opening) {
 				if ('rng:foo' == $tag) {
@@ -273,7 +274,7 @@ class CBXMLTransformerTest extends PHPUnit_Framework_TestCase {
 		       "<empty />\n".
 		       "</root>";
 
-		$actual = CBXMLTransformer::transformString(
+		$actual = XMLTransformer::transformString(
 			$xml,
 			function($tag, $attributes, $opening) {
 				if ('element' == $tag) {
@@ -299,7 +300,7 @@ class CBXMLTransformerTest extends PHPUnit_Framework_TestCase {
 		       "<empty />\n".
 		       "</root>";
 
-		$actual = CBXMLTransformer::transformString(
+		$actual = XMLTransformer::transformString(
 			$xml,
 			function($tag, $attributes, $opening) {
 				if ('element' == $tag) {
@@ -323,7 +324,7 @@ class CBXMLTransformerTest extends PHPUnit_Framework_TestCase {
 		       "\n".
 		       "</root>";
 
-		$actual = CBXMLTransformer::transformString(
+		$actual = XMLTransformer::transformString(
 			$xml,
 			function($tag, $attributes, $opening) {
 				if ('empty' == $tag) {
@@ -354,7 +355,7 @@ __XML1__;
 </root>
 __EXP1__;
 
-		$actual = CBXMLTransformer::transformString(
+		$actual = XMLTransformer::transformString(
 			$xml,
 			function($tag, $attributes, $opening) {
 				if ('empty' != $tag) {
@@ -384,7 +385,7 @@ __XML1__;
 </TEI>
 __EXP__;
 
-		$actual = CBXMLTransformer::transformString(
+		$actual = XMLTransformer::transformString(
 			$xml,
 			function($tag, $attributes, $opening) {
 				if ('element' == $tag) {
@@ -402,7 +403,7 @@ __EXP__;
 </TEI>
 __EXP__;
 
-		$actual = CBXMLTransformer::transformString(
+		$actual = XMLTransformer::transformString(
 			$xml,
 			function($tag, $attributes, $opening) {
 				if ('element' == $tag) {
@@ -420,7 +421,7 @@ __EXP__;
 </TEI>
 __EXP__;
 
-		$actual = CBXMLTransformer::transformString(
+		$actual = XMLTransformer::transformString(
 			$xml,
 			function($tag, $attributes, $opening) {
 				if ('element' == $tag) {
@@ -438,7 +439,7 @@ __EXP__;
 </TEI>
 __EXP__;
 
-		$actual = CBXMLTransformer::transformString(
+		$actual = XMLTransformer::transformString(
 			$xml,
 			function($tag, $attributes, $opening) {
 				if ('element' == $tag) {
@@ -467,7 +468,7 @@ __XML1__;
 </root>
 __EXP1__;
 
-		$actual = CBXMLTransformer::transformString(
+		$actual = XMLTransformer::transformString(
 			$xml,
 			function($tag, $attributes, $opening) {
 				return array(
@@ -496,7 +497,7 @@ __XML1__;
 </root>
 __EXP1__;
 
-		$actual = CBXMLTransformer::transformString(
+		$actual = XMLTransformer::transformString(
 			$xml,
 			function($tag, $attributes, $opening) {
 				return array(
@@ -524,7 +525,7 @@ __XML1__;
 </root>
 __EXP1__;
 
-		$actual = CBXMLTransformer::transformString(
+		$actual = XMLTransformer::transformString(
 			$xml,
 			function($tag, $attributes, $opening) {
 				return array(
@@ -552,7 +553,7 @@ Content outside<element>Element content</element>
 </root>
 __EXP1__;
 
-		$actual = CBXMLTransformer::transformString(
+		$actual = XMLTransformer::transformString(
 			$xml,
 			function($tag, $attributes, $opening) {
 				if ('element' == $tag) {
@@ -582,7 +583,7 @@ __XML1__;
 </root>
 __EXP1__;
 
-		$actual = CBXMLTransformer::transformString(
+		$actual = XMLTransformer::transformString(
 			$xml,
 			function($tag, $attributes, $opening) {
 				if ('element' == $tag) {
@@ -612,7 +613,7 @@ __XML1__;
 </root>
 __EXP1__;
 
-		$actual = CBXMLTransformer::transformString(
+		$actual = XMLTransformer::transformString(
 			$xml,
 			function($tag, $attributes, $opening) {
 				if ('element' == $tag) {
@@ -642,7 +643,7 @@ __XML1__;
 </root>
 __EXP1__;
 
-		$actual = CBXMLTransformer::transformString(
+		$actual = XMLTransformer::transformString(
 			$xml,
 			function($tag, $attributes, $opening) {
 				if ('element' == $tag) {
@@ -663,7 +664,7 @@ __EXP1__;
 		$xml = '<root><empty /></root>';
 		$exp = '<root>Stuff behind</root>';
 
-		$actual = CBXMLTransformer::transformString(
+		$actual = XMLTransformer::transformString(
 			$xml,
 			function($tag, $attributes, $opening) {
 				if ('empty' == $tag) {
@@ -685,7 +686,7 @@ __EXP1__;
 		$xml = '<root><empty /></root>';
 		$exp = '<root>Stuff behind</root>';
 
-		$actual = CBXMLTransformer::transformString(
+		$actual = XMLTransformer::transformString(
 			$xml,
 			function($tag, $attributes, $opening) {
 				if ('empty' == $tag) {
@@ -707,7 +708,7 @@ __EXP1__;
 		$xml = '<root><empty /></root>';
 		$exp = '<root>Stuff before</root>';
 
-		$actual = CBXMLTransformer::transformString(
+		$actual = XMLTransformer::transformString(
 			$xml,
 			function($tag, $attributes, $opening) {
 				if ('empty' == $tag) {
@@ -729,7 +730,7 @@ __EXP1__;
 		$xml = '<root><empty /></root>';
 		$exp = '<root>Stuff before</root>';
 
-		$actual = CBXMLTransformer::transformString(
+		$actual = XMLTransformer::transformString(
 			$xml,
 			function($tag, $attributes, $opening) {
 				if ('empty' == $tag) {
@@ -760,7 +761,7 @@ __XML1__;
 </root>
 __EXP1__;
 
-		$actual = CBXMLTransformer::transformString(
+		$actual = XMLTransformer::transformString(
 			$xml,
 			function($tag, $attributes, $opening) {
 				if ('element' == $tag) {
@@ -790,7 +791,7 @@ __EXP1__;
 </root>
 __XML1__;
 
-		$actual = CBXMLTransformer::transformString(
+		$actual = XMLTransformer::transformString(
 			$xml,
 			function($tag, $attributes, $opening) {
 				if ('element' == $tag) {
@@ -822,7 +823,7 @@ __XML1__;
 </root>
 __XML2__;
 
-		$actual = CBXMLTransformer::transformString(
+		$actual = XMLTransformer::transformString(
 			$xml,
 			function($tag, $attributes, $opening) {
 				if ('ignore' == $tag) {
@@ -841,7 +842,7 @@ __XML2__;
 
 		$xml = '<root><test attr="&amp; &lt; &gt;">Foo</test></root>';
 		$expected = '<root><test attr="&amp; &lt; &gt;">Foo</test></root>';
-		$actual = CBXMLTransformer::transformString(
+		$actual = XMLTransformer::transformString(
 			$xml,
 			function($tag, $attributes, $opening) {
 				// No modification
@@ -869,7 +870,7 @@ __XML1__;
 </root>
 __EXP1__;
 
-		$actual = CBXMLTransformer::transformString(
+		$actual = XMLTransformer::transformString(
 			$xml,
 			function($tag, $attributes, $opening) {
 				if ('element' == $tag or
@@ -897,7 +898,7 @@ __EXP1__;
 </a>
 __XML1__;
 
-		$actual = CBXMLTransformer::transformString(
+		$actual = XMLTransformer::transformString(
 			$xml,
 			function($tag, $attributes, $opening) {
 				switch ($tag) {

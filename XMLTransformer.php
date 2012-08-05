@@ -1,5 +1,7 @@
 <?php
 
+namespace BlueM;
+
 /**
  * XML transformation class.
  *
@@ -23,10 +25,9 @@
  * comments for CBXMLTransformer::transformString() for information on usage.
  * @package CBXMLTransformer
  * @author Carsten Bluem <carsten@bluem.net>
- * @copyright 2008-2012 Carsten Bluem <carsten@bluem.net>
  * @license http://www.opensource.org/licenses/bsd-license.php  BSD License
  */
-class CBXMLTransformer {
+class XMLTransformer {
 
 	const ELOPEN = 1;
 	const ELEMPTY = 2;
@@ -106,35 +107,35 @@ class CBXMLTransformer {
 	 *                    Anything for which neither false or an appropriate array
 	 *                    value is returned, is left unmodified.
 	 * @return string XML string
-	 * @throws InvalidArgumentException
+	 * @throws \InvalidArgumentException
 	 */
 	public static function transformString($xml, $callback) {
 
 		$xmltr = new static;
 
 		if (!self::checkCallback($callback)) {
-			throw new InvalidArgumentException('Callback must be function, method or closure');
+			throw new \InvalidArgumentException('Callback must be function, method or closure');
 		}
 		$xmltr->callback = $callback;
 
-		$r = new XMLReader;
+		$r = new \XMLReader;
 		$r->XML($xml);
 
-		$r->setParserProperty(XMLReader::SUBST_ENTITIES, false);
+		$r->setParserProperty(\XMLReader::SUBST_ENTITIES, false);
 
 		while ($r->read()) {
 			switch ($r->nodeType) {
-				case (XMLREADER::ELEMENT):
+				case (\XMLReader::ELEMENT):
 					$xmltr->nodeOpen($r);
 					break;
-				case (XMLREADER::END_ELEMENT):
+				case (\XMLReader::END_ELEMENT):
 					$xmltr->nodeClose($r);
 					break;
-				case (XMLReader::SIGNIFICANT_WHITESPACE):
-				case (XMLReader::WHITESPACE):
+				case (\XMLReader::SIGNIFICANT_WHITESPACE):
+				case (\XMLReader::WHITESPACE):
 					$xmltr->nodeContent($r->value);
 					break;
-				case (XMLREADER::TEXT):
+				case (\XMLReader::TEXT):
 					$xmltr->nodeContent(htmlspecialchars($r->value));
 			}
 		}
@@ -145,10 +146,10 @@ class CBXMLTransformer {
 
 	/**
 	 * Method that will be invoked for any opening or empty XML element.
-	 * @param XMLReader $r
+	 * @param \XMLReader $r
 	 * @throws UnexpectedValueException
 	 */
-	protected function nodeOpen(XMLReader $r) {
+	protected function nodeOpen(\XMLReader $r) {
 
 		if ($this->insideIgnorableTag) {
 			if (!$r->isEmptyElement) {
@@ -208,7 +209,7 @@ class CBXMLTransformer {
 			$insoutside .= isset($trnsf['insafter']) ? $trnsf['insafter'] : '';
 		} else {
 			if (isset($trnsf['transform']) and
-			    $trnsf['transform'] instanceof Closure) {
+			    $trnsf['transform'] instanceof \Closure) {
 				$this->transformMe[] = true;
 				$this->transformerStack[] = array($trnsf['transform'], '');
 			} else {
@@ -229,9 +230,9 @@ class CBXMLTransformer {
 
 	/**
 	 * Method that will be invoked for any closing XML element
-	 * @param XMLReader $r
+	 * @param \XMLReader $r
 	 */
-	protected function nodeClose(XMLReader $r) {
+	protected function nodeClose(\XMLReader $r) {
 
 		if ($this->insideIgnorableTag) {
 			$this->insideIgnorableTag --;
@@ -302,14 +303,14 @@ class CBXMLTransformer {
 	 * containing a callable class and method, or a Closure.
 	 * @param string|array|Closure $callback The callback given by the client
 	 * @return bool
-	 * @throws InvalidArgumentException
+	 * @throws \InvalidArgumentException
 	 */
 	protected static function checkCallback($callback) {
 
 		if (is_string($callback)) {
 			// Function
 			if (!function_exists($callback)) {
-				throw new InvalidArgumentException("Invalid callback function");
+				throw new \InvalidArgumentException("Invalid callback function");
 			}
 			return true;
 		}
@@ -317,11 +318,11 @@ class CBXMLTransformer {
 		if (is_array($callback)) {
 			// Method
 			if (2 != count($callback)) {
-				throw new InvalidArgumentException("When an array is passed as callback, it must have exactly 2 members");
+				throw new \InvalidArgumentException("When an array is passed as callback, it must have exactly 2 members");
 			}
 			list($class, $method) = $callback;
 			if (!is_callable(array($class, $method))) {
-				throw new InvalidArgumentException("Invalid callback method");
+				throw new \InvalidArgumentException("Invalid callback method");
 			}
 			return true;
 		}
@@ -337,10 +338,10 @@ class CBXMLTransformer {
 
 	/**
 	 * Returns the given node's attributes as an associative array
-	 * @param XMLReader $r
+	 * @param \XMLReader $r
 	 * @return array
 	 */
-	protected function getAttributes(XMLReader $r) {
+	protected function getAttributes(\XMLReader $r) {
 		if (!$r->hasAttributes) {
 			return array();
 		}
@@ -359,7 +360,7 @@ class CBXMLTransformer {
 	 * @param array $attributes Associative array of attributes
 	 * @param mixed $trnsf Transformation "rules"
 	 * @return string
-	 * @throws UnexpectedValueException
+	 * @throws \UnexpectedValueException
 	 */
 	protected function addAttributes($tag, array $attributes, $trnsf) {
 		foreach ($attributes as $attrname=>$value) {
@@ -395,7 +396,7 @@ class CBXMLTransformer {
 			} elseif ('insend' != $attrname and
 					  'insafter' != $attrname and
 					  'transform' != $attrname) {
-				throw new UnexpectedValueException("Unexpected key \"$attrname\" in array returned by callback function for <$tag>.");
+				throw new \UnexpectedValueException("Unexpected key \"$attrname\" in array returned by callback function for <$tag>.");
 			}
 		}
 		return "<$tag>";
