@@ -29,8 +29,8 @@ What is it not so good for?
 ----------------------------
 When the input data has to be re-arranged, you are probably better off with XSL-T, as this is something that XMLTransformer does not provide. (Although to some extent it can be done with appropriate callback code.) Of course you are free to combine XSL-T with XMLTransformer to get the best of both worlds, if one is not enough.
 
-How does it work
------------------
+How to use it
+-------------
 You pass the input XML and the name of a callback function (or the name of a callback method or a closure) to XMLTransformer. For each tag (opening, closing or empty) the callback function will be called with the tag’s data as argument and information on whether it is an opening, empty or closing tag. The callback function returns – based on the given data – an array that contains information on the desired tag (should the tag be renamed, removed, and if the latter: with or without content?), on the desired attributes (removal, addition, renaming), on adding literal content and a closure that will be called after the transformation has been performed. All of the aforementioned return information is optional, and if you do not return anything or null, nothing is changed.
 
 If you need to perform modification of text nodes’ content, you may prefer to subclass XMLTransformer and overwrite the nodeContent() method. See below for an example.
@@ -38,9 +38,10 @@ If you need to perform modification of text nodes’ content, you may prefer to 
 Examples
 ===========
 
-All of the examples below assume that your code includes the following two lines in order to load the class and to import the namespaced class:
+All of the examples below assume that your code includes the following lines in order to load the class and to import the namespaced class:
 
-	require_once 'XMLTransformer.php';
+	require_once '/path/to/repository-clone/lib/BlueM/XMLTransformer.php';
+	// Alternatively, you can use PSR-0 autoloading
 	use BlueM\XMLTransformer;
 
 
