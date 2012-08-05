@@ -2,7 +2,7 @@
 
 use BlueM\XMLTransformer;
 
-require_once __DIR__.'/XMLTransformer.php';
+require_once __DIR__.'/../lib/XMLTransformer.php';
 
 /**
  * Test class for XMLTransformer.
