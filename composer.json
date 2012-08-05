@@ -1,0 +1,21 @@
+{
+    "name": "BlueM/XMLTransformer",
+    "type": "library",
+    "description": "Library for transforming any kind of input XML into an output string",
+    "keywords": ["xml"],
+    "homepage": "https://github.com/BlueM/XMLTransformer",
+    "license": "BSD",
+    "authors": [
+        {
+            "name": "Carsten Blüm",
+            "email": "carsten@bluem.net",
+            "homepage": "http://www.bluem.net"
+        }
+    ],
+    "require": {
+        "php": ">=5.3.0"
+    },
+    "autoload": {
+        "psr-0": {"BlueM": ""}
+    }
+}
