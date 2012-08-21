@@ -2,6 +2,10 @@
 
 namespace BlueM;
 
+use \XMLReader;
+use \UnexpectedValueException;
+use \InvalidArgumentException;
+
 /**
  * XML transformation class.
  *
@@ -78,7 +82,7 @@ class XMLTransformer {
 	/**
 	 * Performs XML transformation of the string given as argument
 	 * @param string $xml Well-formed XML string to transform
-	 * @param string|array|Closure $callback Name of either a callback
+	 * @param string|array|\Closure $callback Name of either a callback
 	 *                    function or an array with indexes 0: class and
 	 *                    1: method that returns transformation info for this
 	 *                    tag. (As the function is called for each opening or
@@ -118,24 +122,24 @@ class XMLTransformer {
 		}
 		$xmltr->callback = $callback;
 
-		$r = new \XMLReader;
+		$r = new XMLReader;
 		$r->XML($xml);
 
-		$r->setParserProperty(\XMLReader::SUBST_ENTITIES, false);
+		$r->setParserProperty(XMLReader::SUBST_ENTITIES, false);
 
 		while ($r->read()) {
 			switch ($r->nodeType) {
-				case (\XMLReader::ELEMENT):
+				case (XMLReader::ELEMENT):
 					$xmltr->nodeOpen($r);
 					break;
-				case (\XMLReader::END_ELEMENT):
+				case (XMLReader::END_ELEMENT):
 					$xmltr->nodeClose($r);
 					break;
-				case (\XMLReader::SIGNIFICANT_WHITESPACE):
-				case (\XMLReader::WHITESPACE):
+				case (XMLReader::SIGNIFICANT_WHITESPACE):
+				case (XMLReader::WHITESPACE):
 					$xmltr->nodeContent($r->value);
 					break;
-				case (\XMLReader::TEXT):
+				case (XMLReader::TEXT):
 					$xmltr->nodeContent(htmlspecialchars($r->value));
 			}
 		}
@@ -146,10 +150,9 @@ class XMLTransformer {
 
 	/**
 	 * Method that will be invoked for any opening or empty XML element.
-	 * @param \XMLReader $r
-	 * @throws UnexpectedValueException
+	 * @param XMLReader $r
 	 */
-	protected function nodeOpen(\XMLReader $r) {
+	protected function nodeOpen(XMLReader $r) {
 
 		if ($this->insideIgnorableTag) {
 			if (!$r->isEmptyElement) {
@@ -230,9 +233,9 @@ class XMLTransformer {
 
 	/**
 	 * Method that will be invoked for any closing XML element
-	 * @param \XMLReader $r
+	 * @param XMLReader $r
 	 */
-	protected function nodeClose(\XMLReader $r) {
+	protected function nodeClose(XMLReader $r) {
 
 		if ($this->insideIgnorableTag) {
 			$this->insideIgnorableTag --;
@@ -301,16 +304,16 @@ class XMLTransformer {
 	/**
 	 * Verifies whether the callback is a valid function, an array
 	 * containing a callable class and method, or a Closure.
-	 * @param string|array|Closure $callback The callback given by the client
+	 * @param string|array|\Closure $callback The callback given by the client
 	 * @return bool
-	 * @throws \InvalidArgumentException
+	 * @throws InvalidArgumentException
 	 */
 	protected static function checkCallback($callback) {
 
 		if (is_string($callback)) {
 			// Function
 			if (!function_exists($callback)) {
-				throw new \InvalidArgumentException("Invalid callback function");
+				throw new InvalidArgumentException("Invalid callback function");
 			}
 			return true;
 		}
@@ -318,11 +321,11 @@ class XMLTransformer {
 		if (is_array($callback)) {
 			// Method
 			if (2 != count($callback)) {
-				throw new \InvalidArgumentException("When an array is passed as callback, it must have exactly 2 members");
+				throw new InvalidArgumentException("When an array is passed as callback, it must have exactly 2 members");
 			}
 			list($class, $method) = $callback;
 			if (!is_callable(array($class, $method))) {
-				throw new \InvalidArgumentException("Invalid callback method");
+				throw new InvalidArgumentException("Invalid callback method");
 			}
 			return true;
 		}
@@ -338,10 +341,10 @@ class XMLTransformer {
 
 	/**
 	 * Returns the given node's attributes as an associative array
-	 * @param \XMLReader $r
+	 * @param XMLReader $r
 	 * @return array
 	 */
-	protected function getAttributes(\XMLReader $r) {
+	protected function getAttributes(XMLReader $r) {
 		if (!$r->hasAttributes) {
 			return array();
 		}
@@ -360,7 +363,7 @@ class XMLTransformer {
 	 * @param array $attributes Associative array of attributes
 	 * @param mixed $trnsf Transformation "rules"
 	 * @return string
-	 * @throws \UnexpectedValueException
+	 * @throws UnexpectedValueException
 	 */
 	protected function addAttributes($tag, array $attributes, $trnsf) {
 		foreach ($attributes as $attrname=>$value) {
@@ -396,7 +399,7 @@ class XMLTransformer {
 			} elseif ('insend' != $attrname and
 					  'insafter' != $attrname and
 					  'transform' != $attrname) {
-				throw new \UnexpectedValueException("Unexpected key \"$attrname\" in array returned by callback function for <$tag>.");
+				throw new UnexpectedValueException("Unexpected key \"$attrname\" in array returned by callback function for <$tag>.");
 			}
 		}
 		return "<$tag>";
