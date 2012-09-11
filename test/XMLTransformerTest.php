@@ -539,7 +539,7 @@ __EXP1__;
 	/**
 	 * @test
 	 */
-	function insertContentOutsideAtTheBeginning() {
+	function insertContentBeforeAnElement() {
 
 		$xml = <<<__XML1__
 <root>
@@ -569,7 +569,7 @@ __EXP1__;
 	/**
 	 * @test
 	 */
-	function insertContentInsideAtTheBeginning() {
+	function insertContentAfterAnElement() {
 
 		$xml = <<<__XML1__
 <root>
@@ -659,18 +659,17 @@ __EXP1__;
 	/**
 	 * @test
 	 */
-	function insertContentOutsideAtTheEndOfAnEmptyTagToBeRemoved() {
+	function insertContentBehindAnEmptyElement() {
 
-		$xml = '<root><empty /></root>';
-		$exp = '<root>Stuff behind</root>';
+		$xml = '<root><element /></root>';
+		$exp = '<root><element />Behind</root>';
 
 		$actual = XMLTransformer::transformString(
 			$xml,
-			function($tag, $attributes, $opening) {
-				if ('empty' == $tag) {
+			function($tag) {
+				if ('element' == $tag) {
 					return array(
-						'tag'=>false,
-						'insafter'=>'Stuff behind',
+						'insafter'=>'Behind',
 					);
 				}
 			}
@@ -680,19 +679,19 @@ __EXP1__;
 
 	/**
 	 * @test
+	 * @ticket 2
 	 */
-	function insertContentInsideAtTheEndOfAnEmptyTagToBeRemoved() {
+	function insertContentAfterAnEmptyTag() {
 
 		$xml = '<root><empty /></root>';
-		$exp = '<root>Stuff behind</root>';
+		$exp = '<root><empty />Content</root>';
 
 		$actual = XMLTransformer::transformString(
 			$xml,
-			function($tag, $attributes, $opening) {
+			function($tag) {
 				if ('empty' == $tag) {
 					return array(
-						'tag'=>false,
-						'insend'=>'Stuff behind',
+						'insafter'=>'Content',
 					);
 				}
 			}
@@ -702,8 +701,44 @@ __EXP1__;
 
 	/**
 	 * @test
+	 * @expectedException RuntimeException
+	 * @expectedExceptionMessage “insstart” does not make sense
 	 */
-	function insertContentOutsideAtTheBeginningOfAnEmptyTagToBeRemoved() {
+	function tryingToInsertContentAtTheBeginningOfAnEmptyTagThrowsAnException() {
+
+		XMLTransformer::transformString(
+			'<root><empty /></root>',
+			function($tag, $attributes, $opening) {
+				return array(
+					'tag'=>false,
+					'insstart'=>'String',
+				);
+			}
+		);
+	}
+
+	/**
+	 * @test
+	 * @expectedException RuntimeException
+	 * @expectedExceptionMessage “insend” does not make sense
+	 */
+	function tryingToInsertContentAtTheEndOfAnEmptyTagThrowsAnException() {
+
+		XMLTransformer::transformString(
+			'<root><empty /></root>',
+			function($tag, $attributes, $opening) {
+				return array(
+					'tag'=>false,
+					'insend'=>'String',
+				);
+			}
+		);
+	}
+
+	/**
+	 * @test
+	 */
+	function insertContentBeforeAnEmptyTagToBeRemoved() {
 
 		$xml = '<root><empty /></root>';
 		$exp = '<root>Stuff before</root>';
@@ -715,28 +750,6 @@ __EXP1__;
 					return array(
 						'tag'=>false,
 						'insbefore'=>'Stuff before',
-					);
-				}
-			}
-		);
-		$this->assertSame($exp, $actual);
-	}
-
-	/**
-	 * @test
-	 */
-	function insertContentInsideAtTheBeginningOfAnEmptyTagToBeRemoved() {
-
-		$xml = '<root><empty /></root>';
-		$exp = '<root>Stuff before</root>';
-
-		$actual = XMLTransformer::transformString(
-			$xml,
-			function($tag, $attributes, $opening) {
-				if ('empty' == $tag) {
-					return array(
-						'tag'=>false,
-						'insstart'=>'Stuff before',
 					);
 				}
 			}

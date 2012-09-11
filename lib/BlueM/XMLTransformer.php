@@ -5,6 +5,7 @@ namespace BlueM;
 use \XMLReader;
 use \UnexpectedValueException;
 use \InvalidArgumentException;
+use \RuntimeException;
 
 /**
  * XML transformation class.
@@ -208,8 +209,15 @@ class XMLTransformer {
 
 		if ($r->isEmptyElement) {
 			$tag = str_replace('>', ' />', $tag);
-			$insinside .= isset($trnsf['insend']) ? $trnsf['insend'] : '';
-			$insoutside .= isset($trnsf['insafter']) ? $trnsf['insafter'] : '';
+			if (isset($trnsf['insend'])) {
+				throw new RuntimeException('“insend” does not make sense for empty tags. Use “insafter”.');
+			}
+			if ($insinside) {
+				throw new RuntimeException('“insstart” does not make sense for empty tags. Use “insbefore”.');
+			}
+			$insafter = isset($trnsf['insafter']) ? $trnsf['insafter'] : '';
+			$insbefore = isset($trnsf['insbefore']) ? $trnsf['insbefore'] : '';
+			$content = $insoutside.$tag.$insafter;
 		} else {
 			if (isset($trnsf['transform']) and
 			    $trnsf['transform'] instanceof \Closure) {
@@ -218,9 +226,9 @@ class XMLTransformer {
 			} else {
 				$this->transformMe[] = false;
 			}
+			$content = $insoutside.$tag.$insinside;
 		}
 
-		$content = $insoutside.$tag.$insinside;
 
 		if (0 < $count = count($this->transformerStack)) {
 			// Add opening tag to stack of content to be transformed
