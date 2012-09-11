@@ -152,6 +152,7 @@ class XMLTransformer {
 	/**
 	 * Method that will be invoked for any opening or empty XML element.
 	 * @param XMLReader $r
+	 * @throws RuntimeException
 	 */
 	protected function nodeOpen(XMLReader $r) {
 
@@ -210,10 +211,10 @@ class XMLTransformer {
 		if ($r->isEmptyElement) {
 			$tag = str_replace('>', ' />', $tag);
 			if (isset($trnsf['insend'])) {
-				throw new RuntimeException('“insend” does not make sense for empty tags. Use “insafter”.');
+				throw new RuntimeException('“insend” does not make sense for empty tags (here: <'.$name.'/>). Use “insafter”.');
 			}
 			if ($insinside) {
-				throw new RuntimeException('“insstart” does not make sense for empty tags. Use “insbefore”.');
+				throw new RuntimeException('“insstart” does not make sense for empty tags (here: <'.$name.'/>). Use “insbefore”.');
 			}
 			$insafter = isset($trnsf['insafter']) ? $trnsf['insafter'] : '';
 			$insbefore = isset($trnsf['insbefore']) ? $trnsf['insbefore'] : '';
