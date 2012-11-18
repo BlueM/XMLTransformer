@@ -68,8 +68,9 @@ class XMLTransformer {
 
 	/**
 	 * Stack for managing content transformation. Each item is an indexed array
-	 * with indexes 0 = closure that will to do the transformation and 1 =
-	 * content to be transformed.
+	 * with indexes 0 = closure that will to do the transformation, 1 =
+	 * content to be transformed, 2 = bool (false: outer transformation, true:
+	 * inner transformation), 3 = strlen() of the opening tag.
 	 * @var array Indexed array
 	 */
 	protected $transformerStack = array();
@@ -97,18 +98,20 @@ class XMLTransformer {
 	 *                    - "tag" can be a new tag name that will be used instead
 	 *                       of the original one. If false, the tag will be removed,
 	 *                       but its child nodes will be preserved.
-	 *                    - "attr" can be an assoc. array that defines attribute
-	 *                      transformations. Works as "tag" above, i.e.: returning
-	 *                      null for an attribute will remove it, returning a
-	 *                      string will replace the attribute name with that string
+	 *                    - "@<name>" (where <name> is an attribute name) may be
+	 *                      false (will return the attribute), may be a string starting
+	 *                      with "@" (will rename the attribute) or may be a string
+	 *                      (which will set the attribute value)
 	 *                    - "insbefore" inserts PCDATA before the opening tag
 	 *                    - "insstart" inserts PCDATA after the opening tag (i.e.:
 	 *                      as a new first child)
 	 *                    - "insend" inserts PCDATA directly before the closing tag
 	 *                    - "insafter" inserts PCDATA after the closing tag
-	 *                    - "transform" This can be a closure that is passed the
+	 *                    - "transformOuter" This can be a closure that is passed the
 	 *                       transformed element including all contained elements
-	 *                       as one string.
+	 *                       as a string.
+	 *                    - "transformInner" This can be a closure that is passed the
+	 *                       transformed element's content as a string.
 	 *                    Anything for which neither false or an appropriate array
 	 *                    value is returned, is left unmodified.
 	 * @return string XML string
@@ -218,10 +221,14 @@ class XMLTransformer {
 			}
 			$insinside = isset($trnsf['insafter']) ? $trnsf['insafter'] : '';
 		} else {
-			if (isset($trnsf['transform']) and
-			    $trnsf['transform'] instanceof \Closure) {
+			if (isset($trnsf['transformOuter']) and
+			    $trnsf['transformOuter'] instanceof \Closure) {
 				$this->transformMe[] = true;
-				$this->transformerStack[] = array($trnsf['transform'], '');
+				$this->transformerStack[] = array($trnsf['transformOuter'], '', false, 0);
+			} elseif (isset($trnsf['transformInner']) and
+			          $trnsf['transformInner'] instanceof \Closure) {
+				$this->transformMe[] = true;
+				$this->transformerStack[] = array($trnsf['transformInner'], '', true, 0);
 			} else {
 				$this->transformMe[] = false;
 			}
@@ -232,6 +239,7 @@ class XMLTransformer {
 		if (0 < $count = count($this->transformerStack)) {
 			// Add opening tag to stack of content to be transformed
 			$this->transformerStack[$count - 1][1] .= $content;
+			$this->transformerStack[$count - 1][3] = strlen($insoutside.$tag);
 		} else {
 			// Add opening tag to "regular" content
 			$this->content .= $content;
@@ -271,12 +279,24 @@ class XMLTransformer {
 			$tag = "</$tag>";
 		}
 
-		$content = $insinside.$tag.$insoutside;
-
 		if ($transformme) {
 			// Finish this tag by transforming its content
-			$transform = array_pop($this->transformerStack);
-			$content = $transform[0]($transform[1].$content);
+			$transformInfo = array_pop($this->transformerStack);
+			$stackContent  = $transformInfo[1];
+			$closure       = $transformInfo[0];
+			$inner         = $transformInfo[2];
+			$openingTagLen = $transformInfo[3];
+			if ($inner) {
+				// Inner transformation
+				$stackContent = substr($stackContent, $openingTagLen + 1);
+				$content = $closure($stackContent.$insinside);
+			} else {
+				// Outer transformation
+				$content = $closure($stackContent.$insinside.$tag.$insoutside);
+			}
+		} else {
+			// No transformation
+			$content = $insinside.$tag.$insoutside;
 		}
 
 		if (0 < $count = count($this->transformerStack)) {
@@ -373,6 +393,9 @@ class XMLTransformer {
 	 * @throws UnexpectedValueException
 	 */
 	protected function addAttributes($tag, array $attributes, $trnsf) {
+
+		static $allowed = array('insend', 'insafter', 'transformInner', 'transformOuter');
+
 		foreach ($attributes as $attrname=>$value) {
 			if (array_key_exists("@$attrname", $trnsf)) {
 				// There's a rule for this attribute
@@ -403,9 +426,7 @@ class XMLTransformer {
 					// Add literal value
 					$tag .= sprintf(' %s="%s"', str_replace('@', '', $attrname), htmlspecialchars($value));
 				}
-			} elseif ('insend' != $attrname and
-					  'insafter' != $attrname and
-					  'transform' != $attrname) {
+			} elseif (!in_array($attrname, $allowed)) {
 				throw new UnexpectedValueException("Unexpected key \"$attrname\" in array returned by callback function for <$tag>.");
 			}
 		}
