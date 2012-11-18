@@ -29,11 +29,63 @@ What is it not so good for?
 ----------------------------
 When the input data has to be re-arranged, you are probably better off with XSL-T, as this is something that XMLTransformer does not provide. (Although to some extent it can be done with appropriate callback code.) Of course you are free to combine XSL-T with XMLTransformer to get the best of both worlds, if one is not enough.
 
-How to use it
--------------
-You pass the input XML and the name of a callback function (or the name of a callback method or a closure) to XMLTransformer. For each tag (opening, closing or empty) the callback function will be called with the tag’s data as argument and information on whether it is an opening, empty or closing tag. The callback function returns – based on the given data – an array that contains information on the desired tag (should the tag be renamed, removed, and if the latter: with or without content?), on the desired attributes (removal, addition, renaming), on adding literal content and a closure that will be called after the transformation has been performed. All of the aforementioned return information is optional, and if you do not return anything or null, nothing is changed.
 
-If you need to perform modification of text nodes’ content, you may prefer to subclass XMLTransformer and overwrite the nodeContent() method. See below for an example.
+How to use it
+==============
+
+You pass the input XML and the name of a callback function (or the name of a callback method or a closure) to XMLTransformer.
+
+For each tag (opening, closing or empty) the callback function will be called with the tag’s name, its attributes and information on whether it is an opening, empty or closing tag. Now, your function/method/closure can return one of three things:
+
+* An array (which describes what transformations should be performed
+* false (meaning: discard this tag, its attributes as well as any tags and CDATA inside it)
+* null (meaning: don’t modify anything – this is the default behaviour, i.e.: if the callback function is empty, nothing is changed)
+
+Callback function arguments
+----------------------------
+
+The callback function/mehod/closure should accept three arguments:
+
+* The tag name
+* The tag’s attributes (an associative array of name=>value pairs, where the name contains the namespace, if the attribute is not from the default namespace)
+* An int, which will be XMLTransformer::ELOPEN for an opening tag, XMLTransformer::ELEMPTY for an empty tag and XMLTransformer::ELCLOSE for a closing tag.
+
+Please note that the attributes will *always* be given, even for a closing tag.
+
+
+The transformation description array
+-------------------------------------
+
+When you wish to perform a transformation, you must return an associative array. In this case, the following keys can be used:
+
+* “tag”: Returning false for key “tag” removes the tag (incl. its attributes, of course), but keeps any enclosed content. Returning a string will set the tag name to that string.
+* “insbefore”: Will insert the given string before the opening tag
+* “insafter”: Will insert the given string after the closing tag
+* “insstart”: Will insert the given string right after the opening tag
+* “insend”: Will insert the given string right before the closing tag
+* “transformOuter”: Value must be a closure, which will be passed the element itself incl. all its content as a string. The closure’s return value will replace the element.
+* “transformInner”: Value must be a closure, which will be passed the element’s content as a string. The closure’s return value will replace the element.
+
+Additionally, for handling attributes, array keys in the form of “@<name>” can be used, where <name> is the attribute name (with namespaces, if not from the default namespace). The value of such an array key can be one of:
+* false: The attribute will be removed
+* A string starting with “@”: The attribute will be renamed
+* A string: The attribute value will be set to this string.
+
+For instance, this return array …
+
+	return array(
+		'tag'=>'demo',
+		'@xml:id'=>'id',
+		'@foo'=>false,
+		'insafter'=>'!',
+	);
+	
+… would mean:
+* Rename the tag to “demo”
+* Rename the “xml:id” attribute to “id”
+* Remove the “@foo” attribute
+* Insert the string “!” after the closing tag (or directly after the tag, if it’s an empty tag)
+
 
 Examples
 ===========
@@ -168,4 +220,10 @@ This is the code:
 		}
 	
 	}
+
+
+A word on code metrics
+======================
+
+If you run a tool such as “PHP Mess Detector” on XMLTransformer, you will get pretty horrible results for the NPath and the cyclomatic complexity. I deliberately chose to build XMLTransformer as a single, standalone class, and the metrics reflect this decision. However, the test coverage is 100% and there are no known bugs, so maybe we should not pay too much attention to the metrics ;-)
 
