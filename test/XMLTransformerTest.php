@@ -858,7 +858,7 @@ __EXP1__;
 	/**
 	 * @test
 	 */
-	function testInnerContentTransformationGetsTheExpectedInput() {
+	function innerContentTransformationGetsTheExpectedInput() {
 
 		$xml = '<root><element abc="def">Element <tag xml:id="foo">content</tag></element></root>';
 
@@ -868,13 +868,14 @@ __EXP1__;
 				if ('element' == $tag) {
 					return array(
 						'transformInner'=>function($str) {
-							return $str;
+							return intval('Element <tag xml:id="foo">content</tag>' === $str);
 						},
 					);
 				}
 			}
 		);
-		$this->assertSame('<root>Element <tag xml:id="foo">content</tag></root>', $actual);
+
+		$this->assertSame('<root>1</root>', $actual);
 	}
 
 	/**

@@ -70,7 +70,8 @@ class XMLTransformer {
 	 * Stack for managing content transformation. Each item is an indexed array
 	 * with indexes 0 = closure that will to do the transformation, 1 =
 	 * content to be transformed, 2 = bool (false: outer transformation, true:
-	 * inner transformation), 3 = strlen() of the opening tag.
+	 * inner transformation), plus in case of an inner transformation:
+	 * 3 = strlen() of the opening tag (plus "insbefore" value, if applicable).
 	 * @var array Indexed array
 	 */
 	protected $transformerStack = array();
@@ -224,11 +225,11 @@ class XMLTransformer {
 			if (isset($trnsf['transformOuter']) and
 			    $trnsf['transformOuter'] instanceof \Closure) {
 				$this->transformMe[] = true;
-				$this->transformerStack[] = array($trnsf['transformOuter'], '', false, 0);
+				$this->transformerStack[] = array($trnsf['transformOuter'], '', false);
 			} elseif (isset($trnsf['transformInner']) and
 			          $trnsf['transformInner'] instanceof \Closure) {
 				$this->transformMe[] = true;
-				$this->transformerStack[] = array($trnsf['transformInner'], '', true, 0);
+				$this->transformerStack[] = array($trnsf['transformInner'], '', true, strlen($insoutside.$tag));
 			} else {
 				$this->transformMe[] = false;
 			}
@@ -239,7 +240,6 @@ class XMLTransformer {
 		if (0 < $count = count($this->transformerStack)) {
 			// Add opening tag to stack of content to be transformed
 			$this->transformerStack[$count - 1][1] .= $content;
-			$this->transformerStack[$count - 1][3] = strlen($insoutside.$tag);
 		} else {
 			// Add opening tag to "regular" content
 			$this->content .= $content;
@@ -271,8 +271,8 @@ class XMLTransformer {
 			$trnsf = array();
 		}
 
-		$tag = array_key_exists('tag', $trnsf) ? $trnsf['tag'] : $name;
-		$insinside = isset($trnsf['insend']) ? $trnsf['insend'] : '';
+		$tag        = array_key_exists('tag', $trnsf) ? $trnsf['tag'] : $name;
+		$insinside  = isset($trnsf['insend']) ? $trnsf['insend'] : '';
 		$insoutside = isset($trnsf['insafter']) ? $trnsf['insafter'] : '';
 
 		if ($tag) {
@@ -282,13 +282,13 @@ class XMLTransformer {
 		if ($transformme) {
 			// Finish this tag by transforming its content
 			$transformInfo = array_pop($this->transformerStack);
-			$stackContent  = $transformInfo[1];
 			$closure       = $transformInfo[0];
+			$stackContent  = $transformInfo[1];
 			$inner         = $transformInfo[2];
-			$openingTagLen = $transformInfo[3];
 			if ($inner) {
 				// Inner transformation
-				$stackContent = substr($stackContent, $openingTagLen + 1);
+				$openingTagLen = $transformInfo[3];
+				$stackContent = substr($stackContent, $openingTagLen);
 				$content = $closure($stackContent.$insinside);
 			} else {
 				// Outer transformation
