@@ -216,9 +216,7 @@ class XMLTransformer {
 			if ($insinside) {
 				throw new RuntimeException('“insstart” does not make sense for empty tags (here: <'.$name.'/>). Use “insbefore”.');
 			}
-			$insafter = isset($trnsf['insafter']) ? $trnsf['insafter'] : '';
-			$insbefore = isset($trnsf['insbefore']) ? $trnsf['insbefore'] : '';
-			$content = $insoutside.$tag.$insafter;
+			$insinside = isset($trnsf['insafter']) ? $trnsf['insafter'] : '';
 		} else {
 			if (isset($trnsf['transform']) and
 			    $trnsf['transform'] instanceof \Closure) {
@@ -227,9 +225,9 @@ class XMLTransformer {
 			} else {
 				$this->transformMe[] = false;
 			}
-			$content = $insoutside.$tag.$insinside;
 		}
 
+		$content = $insoutside.$tag.$insinside;
 
 		if (0 < $count = count($this->transformerStack)) {
 			// Add opening tag to stack of content to be transformed
