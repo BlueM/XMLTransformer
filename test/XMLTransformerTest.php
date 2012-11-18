@@ -38,7 +38,7 @@ class XMLTransformerTest extends PHPUnit_Framework_TestCase {
 	/**
 	 * @test
 	 */
-	function invokeTheTransformerWithAValidCallbackFunction() {
+	function invokingTheTransformerWithAValidCallbackFunctionWorks() {
 		$actual = XMLTransformer::transformString(
 			'<xml></xml>',
 			'valid_function'
@@ -203,7 +203,7 @@ class XMLTransformerTest extends PHPUnit_Framework_TestCase {
 	/**
 	 * @test
 	 */
-	function renameTheTag() {
+	function renamingATagWorks() {
 		$xml = "<root>\n".
 		       "<element>Element content</element>\n".
 		       "<empty/>\n".
@@ -233,7 +233,7 @@ class XMLTransformerTest extends PHPUnit_Framework_TestCase {
 	/**
 	 * @test
 	 */
-	function renameTheTagWithNamespaces() {
+	function renamingATagWithNamespacesWorks() {
 		$xml = '<TEI xmlns="http://www.tei-c.org/ns/1.0"'.
 		        ' xmlns:rng="http://relaxng.org/ns/structure/1.0"'.
 		        ' xml:lang="de">'."\n".
@@ -263,7 +263,7 @@ class XMLTransformerTest extends PHPUnit_Framework_TestCase {
 	/**
 	 * @test
 	 */
-	function removeATagIncludingContent() {
+	function removingATagIncludingContentWorks() {
 		$xml = "<root>\n".
 		       "<element>Element content</element>\n".
 		       "<empty />\n".
@@ -289,7 +289,7 @@ class XMLTransformerTest extends PHPUnit_Framework_TestCase {
 	/**
 	 * @test
 	 */
-	function removeATagWithoutContent() {
+	function removingATagWithoutContentWorks() {
 		$xml = "<root>\n".
 		       "<element>Element content</element>\n".
 		       "<empty />\n".
@@ -315,7 +315,7 @@ class XMLTransformerTest extends PHPUnit_Framework_TestCase {
 	/**
 	 * @test
 	 */
-	function removeAnEmptyTag() {
+	function removingAnEmptyTagWorks() {
 		$xml = "<root>\n".
 		       "<empty />\n".
 		       "</root>";
@@ -339,7 +339,43 @@ class XMLTransformerTest extends PHPUnit_Framework_TestCase {
 	/**
 	 * @test
 	 */
-	function renameTheAttributes() {
+	function addingAttributesWithAndWithoutNamespacesWorks() {
+
+		$xml = <<<__XML1__
+<root>
+<element>Element content</element>
+<empty />
+</root>
+__XML1__;
+
+		$exp = <<<__EXP1__
+<root xml:id="abc&quot;123">
+<element attr="value">Element content</element>
+<empty attr="value" />
+</root>
+__EXP1__;
+
+		$actual = XMLTransformer::transformString(
+			$xml,
+			function($tag, $attributes, $opening) {
+				if ('element' == $tag or
+						'empty' == $tag) {
+					return array(
+						'@attr'=>'value',
+					);
+				}
+				return array(
+					'@xml:id'=>'abc"123',
+				);
+			}
+		);
+		$this->assertSame($exp, $actual);
+	}
+
+	/**
+	 * @test
+	 */
+	function renamingAnAttributeWorks() {
 
 		$xml = <<<__XML1__
 <root a="b" c="d">
@@ -371,7 +407,7 @@ __EXP1__;
 	/**
 	 * @test
 	 */
-	function renameTheAttributesWithNamespaces() {
+	function renamingAnAttributeWithNamespacesWorks() {
 
 		$xml = <<<__XML1__
 <TEI xmlns="http://www.tei-c.org/ns/1.0">
@@ -381,7 +417,7 @@ __XML1__;
 
 		$exp = <<<__EXP__
 <TEI xmlns="http://www.tei-c.org/ns/1.0">
-<element a="b" c="d">Element content</element>
+<element xyz="b" c="d">Element content</element>
 </TEI>
 __EXP__;
 
@@ -390,6 +426,7 @@ __EXP__;
 			function($tag, $attributes, $opening) {
 				if ('element' == $tag) {
 					return array(
+						'@a'=>'@xyz',
 						'@xml:a'=>'@c',
 					);
 				}
@@ -456,17 +493,11 @@ __EXP__;
 	/**
 	 * @test
 	 */
-	function changeAnAttributeValue() {
+	function changingAttributeValuesWithAndWithoutNamespaceWorks() {
 
-		$xml = <<<__XML1__
-<root a="b" c="d">
-</root>
-__XML1__;
+		$xml = '<root a="b" c="d" xml:id="foo"></root>';
 
-		$exp = <<<__EXP1__
-<root a="Contains &lt; &gt; &amp;" c="Literal">
-</root>
-__EXP1__;
+		$exp = '<root a="Contains &lt; &gt; &amp;" c="Literal" xml:id="bar"></root>';
 
 		$actual = XMLTransformer::transformString(
 			$xml,
@@ -474,6 +505,7 @@ __EXP1__;
 				return array(
 					'@c'=>'Literal',
 					'@a'=>'Contains < > &',
+					'@xml:id'=>'bar',
 				);
 			}
 		);
@@ -483,19 +515,11 @@ __EXP1__;
 	/**
 	 * @test
 	 */
-	function removeAnAttributeValue() {
+	function removingAnAttributeWorks() {
 
-		$xml = <<<__XML1__
-<root>
-<element a="b">Foo</element>
-</root>
-__XML1__;
+		$xml = '<root><element a="b">Foo</element></root>';
 
-		$exp = <<<__EXP1__
-<root>
-<element>Foo</element>
-</root>
-__EXP1__;
+		$exp = '<root><element>Foo</element></root>';
 
 		$actual = XMLTransformer::transformString(
 			$xml,
@@ -760,56 +784,16 @@ __EXP1__;
 	/**
 	 * @test
 	 */
-	function testTransformation() {
+	function outerContentTransformationReturnsInputUnmodified() {
 
-		$xml = <<<__XML1__
-<root>
-<element>Element content</element>
-</root>
-__XML1__;
-
-		$exp = <<<__EXP1__
-<root>
-<element>Transformed</element>
-</root>
-__EXP1__;
+		$xml = '<root><element>Element <tag>content</tag></element></root>';
 
 		$actual = XMLTransformer::transformString(
 			$xml,
 			function($tag, $attributes, $opening) {
 				if ('element' == $tag) {
 					return array(
-						'transform'=>function($str) {
-							return preg_replace(
-								'#<element>.*?</element>#',
-								'<element>Transformed</element>',
-								$str
-							);
-						},
-					);
-				}
-			}
-		);
-		$this->assertSame($exp, $actual);
-	}
-
-	/**
-	 * @test
-	 */
-	function testTransformationInputByNotModifyingTheTransformationInputString() {
-
-		$xml = <<<__XML1__
-<root>
-<element>Element <tag>content</tag></element>
-</root>
-__XML1__;
-
-		$actual = XMLTransformer::transformString(
-			$xml,
-			function($tag, $attributes, $opening) {
-				if ('element' == $tag) {
-					return array(
-						'transform'=>function($str) {
+						'transformOuter'=>function($str) {
 							return $str;
 						},
 					);
@@ -822,17 +806,91 @@ __XML1__;
 	/**
 	 * @test
 	 */
-	function testTransformationWithContentBehinNestedIgnorableTags() {
+	function outerContentTransformationGetsTheExpectedInput() {
+
+		$xml = '<root><element abc="def">Element <tag>content</tag></element></root>';
+
+		$actual = XMLTransformer::transformString(
+			$xml,
+			function($tag, $attributes, $opening) {
+				if ('element' == $tag) {
+					return array(
+						'transformOuter'=>function($str) {
+							return '<element abc="def">Element <tag>content</tag></element>';
+						},
+					);
+				}
+			}
+		);
+		$this->assertSame($xml, $actual);
+	}
+
+	/**
+	 * @test
+	 */
+	function outerContentTransformationWorksWithNestedTagsToBeTransformed() {
+
+		$xml = '<root><element abc="def">Foobar <tag>content</tag></element></root>';
+
+		$actual = XMLTransformer::transformString(
+			$xml,
+			function($tag, $attributes, $opening) {
+				if ('element' == $tag) {
+					return array(
+						'transformOuter'=>function($str) {
+							return strip_tags(str_replace('Foobar', 'Hello', $str));
+						},
+					);
+				}
+				if ('tag' == $tag) {
+					return array(
+						'transformOuter'=>function($str) {
+							return 'World';
+						},
+					);
+				}
+				return array('tag'=>false);
+			}
+		);
+		$this->assertSame('Hello World', $actual);
+	}
+
+	/**
+	 * @test
+	 */
+	function testInnerContentTransformationGetsTheExpectedInput() {
+
+		$xml = '<root><element abc="def">Element <tag xml:id="foo">content</tag></element></root>';
+
+		$actual = XMLTransformer::transformString(
+			$xml,
+			function($tag, $attributes, $opening) {
+				if ('element' == $tag) {
+					return array(
+						'transformInner'=>function($str) {
+							return $str;
+						},
+					);
+				}
+			}
+		);
+		$this->assertSame('<root>Element <tag xml:id="foo">content</tag></root>', $actual);
+	}
+
+	/**
+	 * @test
+	 */
+	function contentBehindNestedIgnorableTagsIsNotRemoved() {
 
 		$xml = <<<__XML1__
 <root>
-<a><ignore><b>Blah</b><ignore>content</ignore></ignore><ignore>content</ignore>Hallo Welt</a>
+<a><ignore><b>Blah</b><ignore>content</ignore></ignore><ignore>content</ignore>Xyz</a>
 </root>
 __XML1__;
 
 		$expected = <<<__XML2__
 <root>
-<a>Hallo Welt</a>
+<a>Xyz</a>
 </root>
 __XML2__;
 
@@ -851,7 +909,7 @@ __XML2__;
 	/**
 	 * @test
 	 */
-	function testIfEscapedSpecialCharactersRemainUnmodifiedInAttributeValues() {
+	function escapedSpecialCharactersRemainUnmodifiedInAttributeValues() {
 
 		$xml = '<root><test attr="&amp; &lt; &gt;">Foo</test></root>';
 		$expected = '<root><test attr="&amp; &lt; &gt;">Foo</test></root>';
@@ -867,43 +925,7 @@ __XML2__;
 	/**
 	 * @test
 	 */
-	function addAnAttribute() {
-
-		$xml = <<<__XML1__
-<root>
-<element>Element content</element>
-<empty />
-</root>
-__XML1__;
-
-		$exp = <<<__EXP1__
-<root xml:id="abc&quot;123">
-<element attr="value">Element content</element>
-<empty attr="value" />
-</root>
-__EXP1__;
-
-		$actual = XMLTransformer::transformString(
-			$xml,
-			function($tag, $attributes, $opening) {
-				if ('element' == $tag or
-				    'empty' == $tag) {
-				    return array(
-						'@attr'=>'value',
-					);
-				}
-				return array(
-					'@xml:id'=>'abc"123',
-				);
-			}
-		);
-		$this->assertSame($exp, $actual);
-	}
-
-	/**
-	 * @test
-	 */
-	function testWithNestedTagsThatShouldBeRemovedCompletely() {
+	function removingTagsCompletelyWorksWithNestedTags() {
 
 		$xml = <<<__XML1__
 <a>
