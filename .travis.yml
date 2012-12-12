@@ -1,4 +1,3 @@
-script: bash ./test/run-tests.sh
 language: php
 php:
   - 5.4
