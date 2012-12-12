@@ -28,408 +28,465 @@ use \RuntimeException;
  * Hence, it can be regarded as an alternative to XSL-T especially for cases
  * in which only slight modifications to the XML string are necessary. See doc
  * comments for CBXMLTransformer::transformString() for information on usage.
+ *
  * @package CBXMLTransformer
- * @author Carsten Bluem <carsten@bluem.net>
+ * @author  Carsten Bluem <carsten@bluem.net>
  * @license http://www.opensource.org/licenses/bsd-license.php  BSD License
  */
-class XMLTransformer {
+class XMLTransformer
+{
 
-	const ELOPEN = 1;
-	const ELEMPTY = 2;
-	const ELCLOSE = 0;
+    const ELOPEN  = 1;
+    const ELEMPTY = 2;
+    const ELCLOSE = 0;
 
-	/**
-	 * Flag: are we currently in a part of the XML tree that's
-	 * enclosed by a tag which should be removed?
-	 * @var bool
-	 */
-	protected $insideIgnorableTag = 0;
+    /**
+     * Flag: are we currently in a part of the XML tree that's
+     * enclosed by a tag which should be removed?
+     *
+     * @var bool
+     */
+    protected $insideIgnorableTag = 0;
 
-	/**
-	 * The callback function or method
-	 * @var mixed
-	 */
-	protected $callback = null;
+    /**
+     * The callback function or method
+     *
+     * @var mixed
+     */
+    protected $callback = null;
 
-	/**
-	 * Indexed array keeping track of open tags, so closing nodes can
-	 * "know" about the opening tags' attributes, too.
-	 * @var array
-	 */
-	protected $stack = array();
+    /**
+     * Indexed array keeping track of open tags, so closing nodes can
+     * "know" about the opening tags' attributes, too.
+     *
+     * @var array
+     */
+    protected $stack = array();
 
-	/**
-	 * Stack for keeping track of whether there's a transformer for the current
-	 * tag or not. Whenever a non-empty tag is opened, a boolean value will be
-	 * added to the stack and whenever a tag is closed, the last one is removed.
-	 * @var array Indexed array
-	 */
-	protected $transformMe = array();
+    /**
+     * Stack for keeping track of whether there's a transformer for the current
+     * tag or not. Whenever a non-empty tag is opened, a boolean value will be
+     * added to the stack and whenever a tag is closed, the last one is removed.
+     *
+     * @var array Indexed array
+     */
+    protected $transformMe = array();
 
-	/**
-	 * Stack for managing content transformation. Each item is an indexed array
-	 * with indexes 0 = closure that will to do the transformation, 1 =
-	 * content to be transformed, 2 = bool (false: outer transformation, true:
-	 * inner transformation), plus in case of an inner transformation:
-	 * 3 = strlen() of the opening tag (plus "insbefore" value, if applicable).
-	 * @var array Indexed array
-	 */
-	protected $transformerStack = array();
+    /**
+     * Stack for managing content transformation. Each item is an indexed array
+     * with indexes 0 = closure that will to do the transformation, 1 =
+     * content to be transformed, 2 = bool (false: outer transformation, true:
+     * inner transformation), plus in case of an inner transformation:
+     * 3 = strlen() of the opening tag (plus "insbefore" value, if applicable).
+     *
+     * @var array Indexed array
+     */
+    protected $transformerStack = array();
 
-	/**
-	 * Holds the resulting XML
-	 * @var string
-	 */
-	protected $content = '';
+    /**
+     * Holds the resulting XML
+     *
+     * @var string
+     */
+    protected $content = '';
 
-	/**
-	 * Performs XML transformation of the string given as argument
-	 * @param string $xml Well-formed XML string to transform
-	 * @param string|array|\Closure $callback Name of either a callback
-	 *                    function or an array with indexes 0: class and
-	 *                    1: method that returns transformation info for this
-	 *                    tag. (As the function is called for each opening or
-	 *                    closing tag, it has to be efficient!) Function / method
-	 *                    must accept 3 arguments: 1. tag name, 2. attributes as
-	 *                    associative array (also provided for closing tags) and
-	 *                    3. a flag that's true when this is an opening tag. The
-	 *                    function must either false (in which case the tag itself
-	 *                    and anything inside it is completely ignored) or an array
-	 *                    with zero or more of the following keys:
-	 *                    - "tag" can be a new tag name that will be used instead
-	 *                       of the original one. If false, the tag will be removed,
-	 *                       but its child nodes will be preserved.
-	 *                    - "@<name>" (where <name> is an attribute name) may be
-	 *                      false (will return the attribute), may be a string starting
-	 *                      with "@" (will rename the attribute) or may be a string
-	 *                      (which will set the attribute value)
-	 *                    - "insbefore" inserts PCDATA before the opening tag
-	 *                    - "insstart" inserts PCDATA after the opening tag (i.e.:
-	 *                      as a new first child)
-	 *                    - "insend" inserts PCDATA directly before the closing tag
-	 *                    - "insafter" inserts PCDATA after the closing tag
-	 *                    - "transformOuter" This can be a closure that is passed the
-	 *                       transformed element including all contained elements
-	 *                       as a string.
-	 *                    - "transformInner" This can be a closure that is passed the
-	 *                       transformed element's content as a string.
-	 *                    Anything for which neither false or an appropriate array
-	 *                    value is returned, is left unmodified.
-	 * @return string XML string
-	 * @throws \InvalidArgumentException
-	 */
-	public static function transformString($xml, $callback) {
+    /**
+     * Performs XML transformation of the string given as argument
+     *
+     * @param string                $xml      Well-formed XML string to transform
+     * @param string|array|\Closure $callback Name of either a callback
+     *                                        function or an array with indexes 0: class and
+     *                                        1: method that returns transformation info for this
+     *                                        tag. (As the function is called for each opening or
+     *                                        closing tag, it has to be efficient!) Function / method
+     *                                        must accept 3 arguments: 1. tag name, 2. attributes as
+     *                                        associative array (also provided for closing tags) and
+     *                                        3. a flag that's true when this is an opening tag. The
+     *                                        function must either false (in which case the tag itself
+     *                                        and anything inside it is completely ignored) or an array
+     *                                        with zero or more of the following keys:
+     *                                          - "tag" can be a new tag name that will be used instead
+     *                                            of the original one. If false, the tag will be removed,
+     *                                            but its child nodes will be preserved.
+     *                                          - "@<name>" (where <name> is an attribute name) may be
+     *                                            false (will return the attribute), may be a string starting
+     *                                            with "@" (will rename the attribute) or may be a string
+     *                                            (which will set the attribute value)
+     *                                          - "insbefore" inserts PCDATA before the opening tag
+     *                                          - "insstart" inserts PCDATA after the opening tag (i.e.:
+     *                                            as a new first child)
+     *                                          - "insend" inserts PCDATA directly before the closing tag
+     *                                          - "insafter" inserts PCDATA after the closing tag
+     *                                          - "transformOuter" This can be a closure that is passed the
+     *                                            transformed element including all contained elements
+     *                                            as a string.
+     *                                          - "transformInner" This can be a closure that is passed the
+     *                                            transformed element's content as a string.
+     *                                        Anything for which neither false or an appropriate array
+     *                                        value is returned, is left unmodified.
+     *
+     * @return string XML string
+     * @throws \InvalidArgumentException
+     */
+    public static function transformString($xml, $callback)
+    {
 
-		$xmltr = new static;
+        $xmltr = new static;
 
-		if (!self::checkCallback($callback)) {
-			throw new \InvalidArgumentException('Callback must be function, method or closure');
-		}
-		$xmltr->callback = $callback;
+        if (!self::checkCallback($callback)) {
+            throw new \InvalidArgumentException('Callback must be function, method or closure');
+        }
+        $xmltr->callback = $callback;
 
-		$r = new XMLReader;
-		$r->XML($xml);
+        $r = new XMLReader;
+        $r->XML($xml);
 
-		$r->setParserProperty(XMLReader::SUBST_ENTITIES, false);
+        $r->setParserProperty(XMLReader::SUBST_ENTITIES, false);
 
-		while ($r->read()) {
-			switch ($r->nodeType) {
-				case (XMLReader::ELEMENT):
-					$xmltr->nodeOpen($r);
-					break;
-				case (XMLReader::END_ELEMENT):
-					$xmltr->nodeClose($r);
-					break;
-				case (XMLReader::SIGNIFICANT_WHITESPACE):
-				case (XMLReader::WHITESPACE):
-					$xmltr->nodeContent($r->value);
-					break;
-				case (XMLReader::TEXT):
-					$xmltr->nodeContent(htmlspecialchars($r->value));
-			}
-		}
+        while ($r->read()) {
+            switch ($r->nodeType) {
+                case (XMLReader::ELEMENT):
+                    $xmltr->nodeOpen($r);
+                    break;
+                case (XMLReader::END_ELEMENT):
+                    $xmltr->nodeClose($r);
+                    break;
+                case (XMLReader::SIGNIFICANT_WHITESPACE):
+                case (XMLReader::WHITESPACE):
+                    $xmltr->nodeContent($r->value);
+                    break;
+                case (XMLReader::TEXT):
+                    $xmltr->nodeContent(htmlspecialchars($r->value));
+            }
+        }
 
-		$r->close();
-		return $xmltr->content;
-	}
+        $r->close();
+        return $xmltr->content;
+    }
 
-	/**
-	 * Method that will be invoked for any opening or empty XML element.
-	 * @param XMLReader $r
-	 * @throws RuntimeException
-	 */
-	protected function nodeOpen(XMLReader $r) {
+    /**
+     * Method that will be invoked for any opening or empty XML element.
+     *
+     * @param XMLReader $r
+     *
+     * @throws RuntimeException
+     */
+    protected function nodeOpen(XMLReader $r)
+    {
 
-		if ($this->insideIgnorableTag) {
-			if (!$r->isEmptyElement) {
-				$this->insideIgnorableTag ++;
-			}
-			return;
-		}
+        if ($this->insideIgnorableTag) {
+            if (!$r->isEmptyElement) {
+                $this->insideIgnorableTag++;
+            }
+            return;
+        }
 
-		$attributes = $this->getAttributes($r);
+        $attributes = $this->getAttributes($r);
 
-		if (!$r->isEmptyElement) {
-			// Remember the attributes, so the closing tag can access them, too
-			$this->stack[] = $attributes;
-			$type = self::ELEMPTY;
-		} else {
-			$type = self::ELOPEN;
-		}
+        if (!$r->isEmptyElement) {
+            // Remember the attributes, so the closing tag can access them, too
+            $this->stack[] = $attributes;
+            $type          = self::ELEMPTY;
+        } else {
+            $type = self::ELOPEN;
+        }
 
-		$name = $r->prefix ? $r->prefix.':'.$r->localName : $r->localName;
+        $name = $r->prefix ? $r->prefix.':'.$r->localName : $r->localName;
 
-		if (false === $trnsf = call_user_func_array($this->callback, array($name, $attributes, $type))) {
-			if (!$r->isEmptyElement) {
-				$this->insideIgnorableTag ++;
-			}
-			return; // Nothing to do
-		} elseif (null === $trnsf) {
-			$trnsf = array();
-		}
+        if (false === $trnsf = call_user_func_array(
+            $this->callback,
+            array($name, $attributes, $type)
+        )
+        ) {
+            if (!$r->isEmptyElement) {
+                $this->insideIgnorableTag++;
+            }
+            return; // Nothing to do
+        } elseif (null === $trnsf) {
+            $trnsf = array();
+        }
 
-		$tag = isset($trnsf['tag']) ? $trnsf['tag'] : $name;
+        $tag = isset($trnsf['tag']) ? $trnsf['tag'] : $name;
 
-		unset($trnsf['tag']); // Reminder: keep outside the "if" block in case
-		                      // NULL was returned for the tag
+        unset($trnsf['tag']); // Reminder: keep outside the "if" block in case
+        // NULL was returned for the tag
 
-		if (isset($trnsf['insbefore'])) {
-			$insoutside = $trnsf['insbefore'];
-			unset($trnsf['insbefore']);
-		} else {
-			$insoutside = '';
-		}
+        if (isset($trnsf['insbefore'])) {
+            $insoutside = $trnsf['insbefore'];
+            unset($trnsf['insbefore']);
+        } else {
+            $insoutside = '';
+        }
 
-		if (isset($trnsf['insstart'])) {
-			$insinside = $trnsf['insstart'];
-			unset($trnsf['insstart']);
-		} else {
-			$insinside = '';
-		}
+        if (isset($trnsf['insstart'])) {
+            $insinside = $trnsf['insstart'];
+            unset($trnsf['insstart']);
+        } else {
+            $insinside = '';
+        }
 
-		// Add attributes
-		if ($tag) {
-			$tag = $this->addAttributes($tag, $attributes, $trnsf);
-		}
+        // Add attributes
+        if ($tag) {
+            $tag = $this->addAttributes($tag, $attributes, $trnsf);
+        }
 
-		if ($r->isEmptyElement) {
-			$tag = str_replace('>', ' />', $tag);
-			if (isset($trnsf['insend'])) {
-				throw new RuntimeException('“insend” does not make sense for empty tags (here: <'.$name.'/>). Use “insafter”.');
-			}
-			if ($insinside) {
-				throw new RuntimeException('“insstart” does not make sense for empty tags (here: <'.$name.'/>). Use “insbefore”.');
-			}
-			$insinside = isset($trnsf['insafter']) ? $trnsf['insafter'] : '';
-		} else {
-			if (isset($trnsf['transformOuter']) and
-			    $trnsf['transformOuter'] instanceof \Closure) {
-				$this->transformMe[] = true;
-				$this->transformerStack[] = array($trnsf['transformOuter'], '', false);
-			} elseif (isset($trnsf['transformInner']) and
-			          $trnsf['transformInner'] instanceof \Closure) {
-				$this->transformMe[] = true;
-				$this->transformerStack[] = array($trnsf['transformInner'], '', true, strlen($insoutside.$tag));
-			} else {
-				$this->transformMe[] = false;
-			}
-		}
+        if ($r->isEmptyElement) {
+            $tag = str_replace('>', ' />', $tag);
+            if (isset($trnsf['insend'])) {
+                throw new RuntimeException(
+                    '“insend” does not make sense for empty tags (here: <'.$name.'/>). '.
+                    'Use “insafter”.'
+                );
+            }
+            if ($insinside) {
+                throw new RuntimeException(
+                    '“insstart” does not make sense for empty tags (here: <'.$name.'/>). '.
+                    'Use “insbefore”.'
+                );
+            }
+            $insinside = isset($trnsf['insafter']) ? $trnsf['insafter'] : '';
+        } else {
+            if (isset($trnsf['transformOuter']) and
+                $trnsf['transformOuter'] instanceof \Closure
+            ) {
+                $this->transformMe[]      = true;
+                $this->transformerStack[] = array($trnsf['transformOuter'], '', false);
+            } elseif (isset($trnsf['transformInner']) and
+                $trnsf['transformInner'] instanceof \Closure
+            ) {
+                $this->transformMe[]      = true;
+                $this->transformerStack[] = array(
+                    $trnsf['transformInner'],
+                    '',
+                    true,
+                    strlen($insoutside.$tag)
+                );
+            } else {
+                $this->transformMe[] = false;
+            }
+        }
 
-		$content = $insoutside.$tag.$insinside;
+        $content = $insoutside.$tag.$insinside;
 
-		if (0 < $count = count($this->transformerStack)) {
-			// Add opening tag to stack of content to be transformed
-			$this->transformerStack[$count - 1][1] .= $content;
-		} else {
-			// Add opening tag to "regular" content
-			$this->content .= $content;
-		}
-	}
+        if (0 < $count = count($this->transformerStack)) {
+            // Add opening tag to stack of content to be transformed
+            $this->transformerStack[$count - 1][1] .= $content;
+        } else {
+            // Add opening tag to "regular" content
+            $this->content .= $content;
+        }
+    }
 
-	/**
-	 * Method that will be invoked for any closing XML element
-	 * @param XMLReader $r
-	 */
-	protected function nodeClose(XMLReader $r) {
+    /**
+     * Method that will be invoked for any closing XML element
+     *
+     * @param XMLReader $r
+     */
+    protected function nodeClose(XMLReader $r)
+    {
 
-		if ($this->insideIgnorableTag) {
-			$this->insideIgnorableTag --;
-		}
+        if ($this->insideIgnorableTag) {
+            $this->insideIgnorableTag--;
+        }
 
-		if ($this->insideIgnorableTag) {
-			return;
-		}
+        if ($this->insideIgnorableTag) {
+            return;
+        }
 
-		$attributes = array_pop($this->stack);
-		$transformme = array_pop($this->transformMe);
+        $attributes  = array_pop($this->stack);
+        $transformme = array_pop($this->transformMe);
 
-		$name = $r->prefix ? $r->prefix.':'.$r->localName : $r->localName;
+        $name = $r->prefix ? $r->prefix.':'.$r->localName : $r->localName;
 
-		if (false === $trnsf = call_user_func_array($this->callback, array($name, $attributes, self::ELCLOSE))) {
-			return;
-		} elseif (null === $trnsf) {
-			$trnsf = array();
-		}
+        if (false === $trnsf = call_user_func_array(
+            $this->callback,
+            array($name, $attributes, self::ELCLOSE)
+        )
+        ) {
+            return;
+        } elseif (null === $trnsf) {
+            $trnsf = array();
+        }
 
-		$tag        = array_key_exists('tag', $trnsf) ? $trnsf['tag'] : $name;
-		$insinside  = isset($trnsf['insend']) ? $trnsf['insend'] : '';
-		$insoutside = isset($trnsf['insafter']) ? $trnsf['insafter'] : '';
+        $tag        = array_key_exists('tag', $trnsf) ? $trnsf['tag'] : $name;
+        $insinside  = isset($trnsf['insend']) ? $trnsf['insend'] : '';
+        $insoutside = isset($trnsf['insafter']) ? $trnsf['insafter'] : '';
 
-		if ($tag) {
-			$tag = "</$tag>";
-		}
+        if ($tag) {
+            $tag = "</$tag>";
+        }
 
-		if ($transformme) {
-			// Finish this tag by transforming its content
-			$transformInfo = array_pop($this->transformerStack);
-			$closure       = $transformInfo[0];
-			$stackContent  = $transformInfo[1];
-			$inner         = $transformInfo[2];
-			if ($inner) {
-				// Inner transformation
-				$openingTagLen = $transformInfo[3];
-				$stackContent = substr($stackContent, $openingTagLen);
-				$content = $closure($stackContent.$insinside);
-			} else {
-				// Outer transformation
-				$content = $closure($stackContent.$insinside.$tag.$insoutside);
-			}
-		} else {
-			// No transformation
-			$content = $insinside.$tag.$insoutside;
-		}
+        if ($transformme) {
+            // Finish this tag by transforming its content
+            $transformInfo = array_pop($this->transformerStack);
+            $closure       = $transformInfo[0];
+            $stackContent  = $transformInfo[1];
+            $inner         = $transformInfo[2];
+            if ($inner) {
+                // Inner transformation
+                $openingTagLen = $transformInfo[3];
+                $stackContent  = substr($stackContent, $openingTagLen);
+                $content       = $closure($stackContent.$insinside);
+            } else {
+                // Outer transformation
+                $content = $closure($stackContent.$insinside.$tag.$insoutside);
+            }
+        } else {
+            // No transformation
+            $content = $insinside.$tag.$insoutside;
+        }
 
-		if (0 < $count = count($this->transformerStack)) {
-			// Add $content to stack of content to be transformed
-			$this->transformerStack[$count - 1][1] .= $content;
-		} else {
-			// Add $content to "regular" content
-			$this->content .= $content;
-		}
-	}
+        if (0 < $count = count($this->transformerStack)) {
+            // Add $content to stack of content to be transformed
+            $this->transformerStack[$count - 1][1] .= $content;
+        } else {
+            // Add $content to "regular" content
+            $this->content .= $content;
+        }
+    }
 
-	/**
-	 * Saves the node's text content
-	 * @param string $content String or whitespace content, with XML
-	 *                        special characters esacaped.
-	 */
-	protected function nodeContent($content) {
+    /**
+     * Saves the node's text content
+     *
+     * @param string $content String or whitespace content, with XML
+     *                        special characters esacaped.
+     */
+    protected function nodeContent($content)
+    {
 
-		if ($this->insideIgnorableTag) {
-			return;
-		}
+        if ($this->insideIgnorableTag) {
+            return;
+        }
 
-		if (0 < $count = count($this->transformerStack)) {
-			// Add content to transformation stack
-			$this->transformerStack[$count - 1][1] .= $content;
-		} else {
-			// Add content to "regular" content
-			$this->content .= $content;
-		}
-	}
+        if (0 < $count = count($this->transformerStack)) {
+            // Add content to transformation stack
+            $this->transformerStack[$count - 1][1] .= $content;
+        } else {
+            // Add content to "regular" content
+            $this->content .= $content;
+        }
+    }
 
-	/**
-	 * Verifies whether the callback is a valid function, an array
-	 * containing a callable class and method, or a Closure.
-	 * @param string|array|\Closure $callback The callback given by the client
-	 * @return bool
-	 * @throws InvalidArgumentException
-	 */
-	protected static function checkCallback($callback) {
+    /**
+     * Verifies whether the callback is a valid function, an array
+     * containing a callable class and method, or a Closure.
+     *
+     * @param string|array|\Closure $callback The callback given by the client
+     *
+     * @return bool
+     * @throws InvalidArgumentException
+     */
+    protected static function checkCallback($callback)
+    {
+        if (is_string($callback)) {
+            // Function
+            if (!function_exists($callback)) {
+                throw new InvalidArgumentException("Invalid callback function");
+            }
+            return true;
+        }
 
-		if (is_string($callback)) {
-			// Function
-			if (!function_exists($callback)) {
-				throw new InvalidArgumentException("Invalid callback function");
-			}
-			return true;
-		}
+        if (is_array($callback)) {
+            // Method
+            if (2 != count($callback)) {
+                throw new InvalidArgumentException(
+                    "When an array is passed as callback, it must have exactly 2 members"
+                );
+            }
+            list($class, $method) = $callback;
+            if (!is_callable(array($class, $method))) {
+                throw new InvalidArgumentException("Invalid callback method");
+            }
+            return true;
+        }
 
-		if (is_array($callback)) {
-			// Method
-			if (2 != count($callback)) {
-				throw new InvalidArgumentException("When an array is passed as callback, it must have exactly 2 members");
-			}
-			list($class, $method) = $callback;
-			if (!is_callable(array($class, $method))) {
-				throw new InvalidArgumentException("Invalid callback method");
-			}
-			return true;
-		}
+        if (is_object($callback) and
+            is_callable($callback)
+        ) {
+            // Closure or other callable object
+            return true;
+        }
 
-		if (is_object($callback) and
-		    is_callable($callback)) {
-			// Closure or other callable object
-			return true;
-		}
+        return false;
+    }
 
-		return false;
-	}
+    /**
+     * Returns the given node's attributes as an associative array
+     *
+     * @param XMLReader $r
+     *
+     * @return array
+     */
+    protected function getAttributes(XMLReader $r)
+    {
+        if (!$r->hasAttributes) {
+            return array();
+        }
+        $attributes = array();
+        $r->moveToFirstAttribute();
+        do {
+            $attributes[($r->prefix ? $r->prefix.':' : '').$r->localName] = $r->value;
+        } while ($r->moveToNextAttribute());
+        $r->moveToElement();
+        return $attributes;
+    }
 
-	/**
-	 * Returns the given node's attributes as an associative array
-	 * @param XMLReader $r
-	 * @return array
-	 */
-	protected function getAttributes(XMLReader $r) {
-		if (!$r->hasAttributes) {
-			return array();
-		}
-		$attributes = array();
-		$r->moveToFirstAttribute();
-		do {
-			$attributes[($r->prefix ? $r->prefix.':' : '').$r->localName] = $r->value;
-		} while ($r->moveToNextAttribute());
-		$r->moveToElement();
-		return $attributes;
-	}
+    /**
+     * Adds attributes to the given tag and returns the resulting opening tag.
+     *
+     * @param string $tag        Tag/element name.
+     * @param array  $attributes Associative array of attributes
+     * @param mixed  $trnsf      Transformation "rules"
+     *
+     * @return string
+     * @throws UnexpectedValueException
+     */
+    protected function addAttributes($tag, array $attributes, $trnsf)
+    {
 
-	/**
-	 * Adds attributes to the given tag and returns the resulting opening tag.
-	 * @param string $tag Tag/element name.
-	 * @param array $attributes Associative array of attributes
-	 * @param mixed $trnsf Transformation "rules"
-	 * @return string
-	 * @throws UnexpectedValueException
-	 */
-	protected function addAttributes($tag, array $attributes, $trnsf) {
+        static $allowed = array('insend', 'insafter', 'transformInner', 'transformOuter');
 
-		static $allowed = array('insend', 'insafter', 'transformInner', 'transformOuter');
+        foreach ($attributes as $attrname => $value) {
+            if (array_key_exists("@$attrname", $trnsf)) {
+                // There's a rule for this attribute
+                if (false === $trnsf["@$attrname"]) {
+                    // Skip this attribute
+                } elseif (strncmp($trnsf["@$attrname"], '@', 1)) {
+                    // Returned value does not start with "@" >> Treat as value
+                    $tag .= sprintf(' %s="%s"', $attrname, htmlspecialchars($trnsf["@$attrname"]));
+                } else {
+                    // Rename attribute
+                    $tag .= sprintf(' %s="%s"', substr($trnsf["@$attrname"], 1), $value);
+                }
+                unset($trnsf["@$attrname"]);
+            } else {
+                // Default behaviour: copy attribute and value
+                $tag .= sprintf(' %s="%s"', $attrname, htmlspecialchars($value));
+            }
+        }
 
-		foreach ($attributes as $attrname=>$value) {
-			if (array_key_exists("@$attrname", $trnsf)) {
-				// There's a rule for this attribute
-				if (false === $trnsf["@$attrname"]) {
-					// Skip this attribute
-				} elseif(strncmp($trnsf["@$attrname"], '@', 1)) {
-					// Returned value does not start with "@" >> Treat as value
-					$tag .= sprintf(' %s="%s"', $attrname, htmlspecialchars($trnsf["@$attrname"]));
-				} else {
-					// Rename attribute
-					$tag .= sprintf(' %s="%s"', substr($trnsf["@$attrname"], 1), $value);
-				}
-				unset($trnsf["@$attrname"]);
-			} else {
-				// Default behaviour: copy attribute and value
-				$tag .= sprintf(' %s="%s"', $attrname, htmlspecialchars($value));
-			}
-		}
-
-		// Loop over remaining keys in $attr (i.e.: attributes added
-		// in the callback method)
-		foreach ($trnsf as $attrname=>$value) {
-			if ('@' == substr($attrname, 0, 1)) {
-				if ('@' == substr($value, 0, 1)) {
-					// Attribute should be renamed, but attribute was not
-					// present in source tag >> nothing to rename >> ignore.
-				} elseif ($value !== false) {
-					// Add literal value
-					$tag .= sprintf(' %s="%s"', str_replace('@', '', $attrname), htmlspecialchars($value));
-				}
-			} elseif (!in_array($attrname, $allowed)) {
-				throw new UnexpectedValueException("Unexpected key \"$attrname\" in array returned by callback function for <$tag>.");
-			}
-		}
-		return "<$tag>";
-	}
+        // Loop over remaining keys in $attr (i.e.: attributes added
+        // in the callback method)
+        foreach ($trnsf as $attrname => $value) {
+            if ('@' == substr($attrname, 0, 1)) {
+                if ('@' == substr($value, 0, 1)) {
+                    // Attribute should be renamed, but attribute was not
+                    // present in source tag >> nothing to rename >> ignore.
+                } elseif ($value !== false) {
+                    // Add literal value
+                    $tag .= sprintf(
+                        ' %s="%s"',
+                        str_replace('@', '', $attrname),
+                        htmlspecialchars($value)
+                    );
+                }
+            } elseif (!in_array($attrname, $allowed)) {
+                throw new UnexpectedValueException(
+                    "Unexpected key \"$attrname\" in array returned by ".
+                    "callback function for <$tag>."
+                );
+            }
+        }
+        return "<$tag>";
+    }
 }
