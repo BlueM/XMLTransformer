@@ -173,12 +173,12 @@ class XMLTransformer
 
         $attributes = $this->getAttributes($r);
 
-        if (!$r->isEmptyElement) {
+        if ($r->isEmptyElement) {
+            $type = self::ELEMPTY;
+        } else {
             // Remember the attributes, so the closing tag can access them, too
             $this->stack[] = $attributes;
-            $type          = self::ELEMPTY;
-        } else {
-            $type = self::ELOPEN;
+            $type          = self::ELOPEN;
         }
 
         $name = $r->prefix ? $r->prefix.':'.$r->localName : $r->localName;

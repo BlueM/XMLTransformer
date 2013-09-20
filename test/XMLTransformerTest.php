@@ -745,6 +745,37 @@ __EXP1__;
 
     /**
      * @test
+     */
+    public function theTagTypePassedToTheClosureIsCorrect()
+    {
+        $xml = '<root><a><b>Hello world</b></a><c/></root>';
+
+        $actual = XMLTransformer::transformString(
+            $xml,
+            function ($tag, $attributes, $type) {
+                if ($type == BlueM\XMLTransformer::ELOPEN) {
+                    return array(
+                        'tag' => false,
+                        'insstart' => "<$tag>"
+                    );
+                } elseif ($type == BlueM\XMLTransformer::ELCLOSE) {
+                    return array(
+                        'tag'    => false,
+                        'insend' => "</$tag>"
+                    );
+                } else {
+                    return array(
+                        'tag'       => false,
+                        'insbefore' => "<$tag/>"
+                    );
+                }
+            }
+        );
+        $this->assertSame($xml, $actual);
+    }
+
+    /**
+     * @test
      * @expectedException RuntimeException
      * @expectedExceptionMessage “insstart” does not make sense
      */
