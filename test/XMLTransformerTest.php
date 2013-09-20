@@ -142,7 +142,6 @@ class XMLTransformerTest extends PHPUnit_Framework_TestCase
      */
     public function returningNothingOrNullYieldsNoModifications()
     {
-
         $xml = "<root>\n".
             "<element>Element content</element>\n".
             "<empty />\n".
@@ -169,7 +168,6 @@ class XMLTransformerTest extends PHPUnit_Framework_TestCase
      */
     public function returningFalseRemovesTheTagAndItsContent()
     {
-
         $xml = "<root>\n".
             "<ignore>Element <em>content</em></ignore>\n".
             "<empty />\n".
@@ -364,7 +362,6 @@ class XMLTransformerTest extends PHPUnit_Framework_TestCase
      */
     public function addingAttributesWithAndWithoutNamespacesWorks()
     {
-
         $xml = <<<__XML1__
 <root>
 <element>Element content</element>
@@ -402,7 +399,6 @@ __EXP1__;
      */
     public function renamingAnAttributeWorks()
     {
-
         $xml = <<<__XML1__
 <root a="b" c="d">
 <element a="b">Element content</element>
@@ -435,7 +431,6 @@ __EXP1__;
      */
     public function renamingAnAttributeWithNamespacesWorks()
     {
-
         $xml = <<<__XML1__
 <TEI xmlns="http://www.tei-c.org/ns/1.0">
 <element a="b" xml:a="d">Element content</element>
@@ -522,9 +517,7 @@ __EXP__;
      */
     public function changingAttributeValuesWithAndWithoutNamespaceWorks()
     {
-
         $xml = '<root a="b" c="d" xml:id="foo"></root>';
-
         $exp = '<root a="Contains &lt; &gt; &amp;" c="Literal" xml:id="bar"></root>';
 
         $actual = XMLTransformer::transformString(
@@ -564,7 +557,6 @@ __EXP__;
      */
     public function makeSureOnlyAttributesThatArePresentInTheSourceTagAreRenamed()
     {
-
         $xml = <<<__XML1__
 <root a="b" c="d">
 <element a="b">Element content</element>
@@ -593,7 +585,6 @@ __EXP1__;
      */
     public function insertContentBeforeAnElement()
     {
-
         $xml = <<<__XML1__
 <root>
 <element>Element content</element>
@@ -624,7 +615,6 @@ __EXP1__;
      */
     public function insertContentAfterAnElement()
     {
-
         $xml = <<<__XML1__
 <root>
 <element>Element content</element>
@@ -655,7 +645,6 @@ __EXP1__;
      */
     public function insertContentInsideAtTheEnd()
     {
-
         $xml = <<<__XML1__
 <root>
 <element>Element content</element>
@@ -686,7 +675,6 @@ __EXP1__;
      */
     public function insertContentOutsideAtTheEnd()
     {
-
         $xml = <<<__XML1__
 <root>
 <element>Element content</element>
@@ -717,7 +705,6 @@ __EXP1__;
      */
     public function insertContentBehindAnEmptyElement()
     {
-
         $xml = '<root><element /></root>';
         $exp = '<root><element />Behind</root>';
 
@@ -740,7 +727,6 @@ __EXP1__;
      */
     public function insertContentAfterAnEmptyTag()
     {
-
         $xml = '<root><empty /></root>';
         $exp = '<root><empty />Content</root>';
 
@@ -764,7 +750,6 @@ __EXP1__;
      */
     public function tryingToInsertContentAtTheBeginningOfAnEmptyTagThrowsAnException()
     {
-
         XMLTransformer::transformString(
             '<root><empty /></root>',
             function () {
@@ -799,7 +784,6 @@ __EXP1__;
      */
     public function insertContentBeforeAnEmptyTagToBeRemoved()
     {
-
         $xml = '<root><empty /></root>';
         $exp = '<root>Stuff before</root>';
 
@@ -822,7 +806,6 @@ __EXP1__;
      */
     public function outerContentTransformationReturnsInputUnmodified()
     {
-
         $xml = '<root><element>Element <tag>content</tag></element></root>';
 
         $actual = XMLTransformer::transformString(
@@ -845,7 +828,6 @@ __EXP1__;
      */
     public function outerContentTransformationGetsTheExpectedInput()
     {
-
         $xml = '<root><element abc="def">Element <tag>content</tag></element></root>';
 
         $actual = XMLTransformer::transformString(
@@ -868,7 +850,6 @@ __EXP1__;
      */
     public function outerContentTransformationWorksWithNestedTagsToBeTransformed()
     {
-
         $xml = '<root><element abc="def">Foobar <tag>content</tag></element></root>';
 
         $actual = XMLTransformer::transformString(
@@ -899,7 +880,6 @@ __EXP1__;
      */
     public function innerContentTransformationGetsTheExpectedInput()
     {
-
         $xml = '<root><element abc="def">Element <tag xml:id="foo">content</tag></element></root>';
 
         $actual = XMLTransformer::transformString(
@@ -923,7 +903,6 @@ __EXP1__;
      */
     public function contentBehindNestedIgnorableTagsIsNotRemoved()
     {
-
         $xml = <<<__XML1__
 <root>
 <a><ignore><b>Blah</b><ignore>content</ignore></ignore><ignore>content</ignore>Xyz</a>
@@ -953,7 +932,6 @@ __XML2__;
      */
     public function escapedSpecialCharactersRemainUnmodifiedInAttributeValues()
     {
-
         $xml      = '<root><test attr="&amp; &lt; &gt;">Foo</test></root>';
         $expected = '<root><test attr="&amp; &lt; &gt;">Foo</test></root>';
         $actual   = XMLTransformer::transformString(
@@ -970,7 +948,6 @@ __XML2__;
      */
     public function removingTagsCompletelyWorksWithNestedTags()
     {
-
         $xml = <<<__XML1__
 <a>
 <b><c>X</c></b>

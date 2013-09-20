@@ -2,11 +2,6 @@
 
 namespace BlueM;
 
-use \XMLReader;
-use \UnexpectedValueException;
-use \InvalidArgumentException;
-use \RuntimeException;
-
 /**
  * XML transformation class.
  *
@@ -94,43 +89,39 @@ class XMLTransformer
      * Performs XML transformation of the string given as argument
      *
      * @param string                $xml      Well-formed XML string to transform
-     * @param string|array|\Closure $callback Name of either a callback
-     *                                        function or an array with indexes 0: class and
-     *                                        1: method that returns transformation info for this
-     *                                        tag. (As the function is called for each opening or
-     *                                        closing tag, it has to be efficient!) Function / method
-     *                                        must accept 3 arguments: 1. tag name, 2. attributes as
-     *                                        associative array (also provided for closing tags) and
-     *                                        3. a flag that's true when this is an opening tag. The
-     *                                        function must either false (in which case the tag itself
-     *                                        and anything inside it is completely ignored) or an array
-     *                                        with zero or more of the following keys:
-     *                                          - "tag" can be a new tag name that will be used instead
-     *                                            of the original one. If false, the tag will be removed,
-     *                                            but its child nodes will be preserved.
-     *                                          - "@<name>" (where <name> is an attribute name) may be
-     *                                            false (will return the attribute), may be a string starting
-     *                                            with "@" (will rename the attribute) or may be a string
-     *                                            (which will set the attribute value)
-     *                                          - "insbefore" inserts PCDATA before the opening tag
-     *                                          - "insstart" inserts PCDATA after the opening tag (i.e.:
-     *                                            as a new first child)
-     *                                          - "insend" inserts PCDATA directly before the closing tag
-     *                                          - "insafter" inserts PCDATA after the closing tag
-     *                                          - "transformOuter" This can be a closure that is passed the
-     *                                            transformed element including all contained elements
-     *                                            as a string.
-     *                                          - "transformInner" This can be a closure that is passed the
-     *                                            transformed element's content as a string.
-     *                                        Anything for which neither false or an appropriate array
-     *                                        value is returned, is left unmodified.
+     * @param string|array|\Closure $callback Name of either a callback function or
+     *        an array with indexes 0: class and 1: method that returns transformation
+     *        info for this tag. (As the function is called for each opening or
+     *        closing tag, it has to be efficient!) Function / method must accept 3
+     *        arguments:
+     *          1. Tag name
+     *          2. Attributes as associative array (also provided for closing tags)
+     *          3. One of the XMLTransformer::EL* constants to indicate the node type
+     *        The function must either false (in which case the tag itself and anything
+     *        inside it is completely ignored) or an array with 0 or more of these keys:
+     *          - "tag" can be a new tag name that will be used instead of the
+     *             original one. If false, the tag will be removed, but its child
+     *             nodes will be preserved.
+     *          - "@<name>" (where <name> is an attribute name) may be false (will
+     *             return the attribute) or a string, either starting with "@" (will
+     *             rename the attribute) or not starting with "@" (literal attr. value)
+     *          - "insbefore" inserts PCDATA before the opening tag
+     *          - "insstart" inserts PCDATA after the opening tag (i.e.: as a
+     *            new first child)
+     *          - "insend" inserts PCDATA directly before the closing tag
+     *          - "insafter" inserts PCDATA after the closing tag
+     *          - "transformOuter" This can be a closure that is passed the
+     *            transformed element including all contained elements as a string.
+     *          - "transformInner" This can be a closure that is passed the transformed
+     *            element's content as a string.
+     *          Anything for which neither false or an appropriate array
+     *          value is returned, is left unmodified.
      *
      * @return string XML string
      * @throws \InvalidArgumentException
      */
     public static function transformString($xml, $callback)
     {
-
         $xmltr = new static;
 
         if (!self::checkCallback($callback)) {
@@ -138,24 +129,24 @@ class XMLTransformer
         }
         $xmltr->callback = $callback;
 
-        $r = new XMLReader;
+        $r = new \XMLReader;
         $r->XML($xml);
 
-        $r->setParserProperty(XMLReader::SUBST_ENTITIES, false);
+        $r->setParserProperty(\XMLReader::SUBST_ENTITIES, false);
 
         while ($r->read()) {
             switch ($r->nodeType) {
-                case (XMLReader::ELEMENT):
+                case (\XMLReader::ELEMENT):
                     $xmltr->nodeOpen($r);
                     break;
-                case (XMLReader::END_ELEMENT):
+                case (\XMLReader::END_ELEMENT):
                     $xmltr->nodeClose($r);
                     break;
-                case (XMLReader::SIGNIFICANT_WHITESPACE):
-                case (XMLReader::WHITESPACE):
+                case (\XMLReader::SIGNIFICANT_WHITESPACE):
+                case (\XMLReader::WHITESPACE):
                     $xmltr->nodeContent($r->value);
                     break;
-                case (XMLReader::TEXT):
+                case (\XMLReader::TEXT):
                     $xmltr->nodeContent(htmlspecialchars($r->value));
             }
         }
@@ -167,13 +158,12 @@ class XMLTransformer
     /**
      * Method that will be invoked for any opening or empty XML element.
      *
-     * @param XMLReader $r
+     * @param \XMLReader $r
      *
-     * @throws RuntimeException
+     * @throws \RuntimeException
      */
-    protected function nodeOpen(XMLReader $r)
+    protected function nodeOpen(\XMLReader $r)
     {
-
         if ($this->insideIgnorableTag) {
             if (!$r->isEmptyElement) {
                 $this->insideIgnorableTag++;
@@ -209,7 +199,7 @@ class XMLTransformer
         $tag = isset($trnsf['tag']) ? $trnsf['tag'] : $name;
 
         unset($trnsf['tag']); // Reminder: keep outside the "if" block in case
-        // NULL was returned for the tag
+                              // NULL was returned for the tag
 
         if (isset($trnsf['insbefore'])) {
             $insoutside = $trnsf['insbefore'];
@@ -233,13 +223,13 @@ class XMLTransformer
         if ($r->isEmptyElement) {
             $tag = str_replace('>', ' />', $tag);
             if (isset($trnsf['insend'])) {
-                throw new RuntimeException(
+                throw new \RuntimeException(
                     '“insend” does not make sense for empty tags (here: <'.$name.'/>). '.
                     'Use “insafter”.'
                 );
             }
             if ($insinside) {
-                throw new RuntimeException(
+                throw new \RuntimeException(
                     '“insstart” does not make sense for empty tags (here: <'.$name.'/>). '.
                     'Use “insbefore”.'
                 );
@@ -280,11 +270,10 @@ class XMLTransformer
     /**
      * Method that will be invoked for any closing XML element
      *
-     * @param XMLReader $r
+     * @param \XMLReader $r
      */
-    protected function nodeClose(XMLReader $r)
+    protected function nodeClose(\XMLReader $r)
     {
-
         if ($this->insideIgnorableTag) {
             $this->insideIgnorableTag--;
         }
@@ -353,7 +342,6 @@ class XMLTransformer
      */
     protected function nodeContent($content)
     {
-
         if ($this->insideIgnorableTag) {
             return;
         }
@@ -374,14 +362,14 @@ class XMLTransformer
      * @param string|array|\Closure $callback The callback given by the client
      *
      * @return bool
-     * @throws InvalidArgumentException
+     * @throws \InvalidArgumentException
      */
     protected static function checkCallback($callback)
     {
         if (is_string($callback)) {
             // Function
             if (!function_exists($callback)) {
-                throw new InvalidArgumentException("Invalid callback function");
+                throw new \InvalidArgumentException("Invalid callback function");
             }
             return true;
         }
@@ -389,13 +377,13 @@ class XMLTransformer
         if (is_array($callback)) {
             // Method
             if (2 != count($callback)) {
-                throw new InvalidArgumentException(
+                throw new \InvalidArgumentException(
                     "When an array is passed as callback, it must have exactly 2 members"
                 );
             }
             list($class, $method) = $callback;
             if (!is_callable(array($class, $method))) {
-                throw new InvalidArgumentException("Invalid callback method");
+                throw new \InvalidArgumentException("Invalid callback method");
             }
             return true;
         }
@@ -413,11 +401,11 @@ class XMLTransformer
     /**
      * Returns the given node's attributes as an associative array
      *
-     * @param XMLReader $r
+     * @param \XMLReader $r
      *
      * @return array
      */
-    protected function getAttributes(XMLReader $r)
+    protected function getAttributes(\XMLReader $r)
     {
         if (!$r->hasAttributes) {
             return array();
@@ -439,11 +427,10 @@ class XMLTransformer
      * @param mixed  $trnsf      Transformation "rules"
      *
      * @return string
-     * @throws UnexpectedValueException
+     * @throws \UnexpectedValueException
      */
     protected function addAttributes($tag, array $attributes, $trnsf)
     {
-
         static $allowed = array('insend', 'insafter', 'transformInner', 'transformOuter');
 
         foreach ($attributes as $attrname => $value) {
@@ -481,7 +468,7 @@ class XMLTransformer
                     );
                 }
             } elseif (!in_array($attrname, $allowed)) {
-                throw new UnexpectedValueException(
+                throw new \UnexpectedValueException(
                     "Unexpected key \"$attrname\" in array returned by ".
                     "callback function for <$tag>."
                 );
