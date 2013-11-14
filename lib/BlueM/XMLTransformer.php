@@ -22,9 +22,9 @@ namespace BlueM;
  *  -- perform any combination of the above
  * Hence, it can be regarded as an alternative to XSL-T especially for cases
  * in which only slight modifications to the XML string are necessary. See doc
- * comments for CBXMLTransformer::transformString() for information on usage.
+ * comments for method transformString() for information on usage.
  *
- * @package CBXMLTransformer
+ * @package XMLTransformer
  * @author  Carsten Bluem <carsten@bluem.net>
  * @license http://www.opensource.org/licenses/bsd-license.php  BSD License
  */
