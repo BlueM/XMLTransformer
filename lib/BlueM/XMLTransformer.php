@@ -132,7 +132,7 @@ class XMLTransformer
         $r = new \XMLReader;
         $r->XML($xml);
 
-        $r->setParserProperty(\XMLReader::SUBST_ENTITIES, false);
+        $r->setParserProperty(\XMLReader::SUBST_ENTITIES, true);
 
         while ($r->read()) {
             switch ($r->nodeType) {

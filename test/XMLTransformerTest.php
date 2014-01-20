@@ -998,6 +998,29 @@ __XML1__;
 
         $this->assertSame('', trim($actual));
     }
+
+    /**
+     * @test
+     */
+    public function entitiesGetSubstituted()
+    {
+        $xml = <<<__XML1__
+<!DOCTYPE dummy
+[
+<!ENTITY w "Works as expected">
+]>
+<root><a>&w;</a></root>
+__XML1__;
+
+        $actual = XMLTransformer::transformString(
+            $xml,
+            function () {
+                return null; // Do not modify anthing
+            }
+        );
+
+        $this->assertSame('<root><a>Works as expected</a></root>', $actual);
+    }
 }
 
 /**

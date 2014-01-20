@@ -28,6 +28,7 @@ XMLTransformer
  [x] Insert content outside at the end
  [x] Insert content behind an empty element
  [x] Insert content after an empty tag
+ [x] The tag type passed to the closure is correct
  [x] Trying to insert content at the beginning of an empty tag throws an exception
  [x] Trying to insert content at the end of an empty tag throws an exception
  [x] Insert content before an empty tag to be removed
@@ -38,4 +39,5 @@ XMLTransformer
  [x] Content behind nested ignorable tags is not removed
  [x] Escaped special characters remain unmodified in attribute values
  [x] Removing tags completely works with nested tags
+ [x] Entities get substituted
 
