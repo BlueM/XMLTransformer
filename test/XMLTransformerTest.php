@@ -909,9 +909,9 @@ __EXP1__;
     /**
      * @test
      */
-    public function innerContentTransformationGetsTheExpectedInput()
+    public function innerContentTransformationGetsTheExpectedInputAndReplacesTheTagsContent()
     {
-        $xml = '<root><element abc="def">Element <tag xml:id="foo">content</tag></element></root>';
+        $xml = '<root><element abc="Wörks with Mültibyte"><tag xml:id="foo">content</tag></element></root>';
 
         $actual = XMLTransformer::transformString(
             $xml,
@@ -919,14 +919,17 @@ __EXP1__;
                 if ('element' == $tag) {
                     return array(
                         'transformInner' => function ($str) {
-                            return intval('Element <tag xml:id="foo">content</tag>' === $str);
-                        },
+                                return '<tag xml:id="foo">content</tag>' === $str ? 'OK' : 'Fail';
+                            },
                     );
                 }
             }
         );
 
-        $this->assertSame('<root>1</root>', $actual);
+        $this->assertSame(
+            '<root><element abc="Wörks with Mültibyte">OK</element></root>',
+            $actual
+        );
     }
 
     /**

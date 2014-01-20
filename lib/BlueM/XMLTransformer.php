@@ -285,7 +285,7 @@ class XMLTransformer
         $attributes  = array_pop($this->stack);
         $transformme = array_pop($this->transformMe);
 
-        $name = $r->prefix ? $r->prefix.':'.$r->localName : $r->localName;
+        $name = $r->prefix ? $r->prefix . ':' . $r->localName : $r->localName;
 
         if (false === $trnsf = call_user_func_array(
             $this->callback,
@@ -298,7 +298,7 @@ class XMLTransformer
         }
 
         $tag        = array_key_exists('tag', $trnsf) ? $trnsf['tag'] : $name;
-        $insinside  = isset($trnsf['insend']) ? $trnsf['insend'] : '';
+        $insinside  = isset($trnsf['insend'])   ? $trnsf['insend']   : '';
         $insoutside = isset($trnsf['insafter']) ? $trnsf['insafter'] : '';
 
         if ($tag) {
@@ -314,15 +314,16 @@ class XMLTransformer
             if ($inner) {
                 // Inner transformation
                 $openingTagLen = $transformInfo[3];
-                $stackContent  = substr($stackContent, $openingTagLen);
-                $content       = $closure($stackContent.$insinside);
+                $openingTag   = substr($stackContent, 0, $openingTagLen);
+                $stackContent = substr($stackContent, $openingTagLen);
+                $content      = $openingTag . $closure($stackContent . $insinside) . $tag;
             } else {
                 // Outer transformation
-                $content = $closure($stackContent.$insinside.$tag.$insoutside);
+                $content = $closure($stackContent . $insinside . $tag . $insoutside);
             }
         } else {
             // No transformation
-            $content = $insinside.$tag.$insoutside;
+            $content = $insinside . $tag . $insoutside;
         }
 
         if (0 < $count = count($this->transformerStack)) {

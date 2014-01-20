@@ -35,7 +35,7 @@ XMLTransformer
  [x] Outer content transformation returns input unmodified
  [x] Outer content transformation gets the expected input
  [x] Outer content transformation works with nested tags to be transformed
- [x] Inner content transformation gets the expected input
+ [x] Inner content transformation gets the expected input and replaces the tags content
  [x] Content behind nested ignorable tags is not removed
  [x] Escaped special characters remain unmodified in attribute values
  [x] Removing tags completely works with nested tags
