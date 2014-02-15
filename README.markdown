@@ -32,6 +32,13 @@ What is it not so good for?
 When the input data has to be re-arranged, you are probably better off with XSL-T, as this is something that XMLTransformer does not provide. (Although to some extent it can be done with appropriate callback code.) Of course you are free to combine XSL-T with XMLTransformer to get the best of both worlds, if one is not enough.
 
 
+Installation
+------------
+The preferred way to install this library is through Composer. For this, add `"bluem/xmltransformer": "dev-master"` to the requirements in your `composer.json` file. (Of course, you can specify a version or a range of versions instead of “dev-master”.)
+
+Alternatively, you can clone the repository using git.
+
+
 How to use it
 ==============
 
@@ -81,7 +88,7 @@ For instance, this return array …
 		'@foo'=>false,
 		'insafter'=>'!',
 	);
-	
+
 … would mean:
 * Rename the tag to “demo”
 * Rename the “xml:id” attribute to “id”
@@ -138,7 +145,7 @@ Multilingual Hello world
 		'transform'
 	);
 	// Will output “Hallo Welt”
-	
+
 	echo XMLTransformer::transformString(
 		'<root><hello-world xml:lang="en" /></root>',
 		'transform'
@@ -202,7 +209,7 @@ This is the code:
 	class NoLatinAccentsXMLTransformer extends XMLTransformer {
 
 		protected function nodeContent($content) {
-	
+
 			// Get the current node's attributes
 			for ($i = count($this->stack); $i >= 0; $i --) {
 				if (empty($this->stack[$i]['xml:lang'])) {
@@ -212,15 +219,15 @@ This is the code:
 				}
 				break;
 			}
-	
+
 			if ('la' == $this->stack[$i]['xml:lang']) {
 				// We are currently in Latin context.
 				// Do the normalization by modifying $content.
 			}
-	
+
 			parent::nodeContent($content);
 		}
-	
+
 	}
 
 
@@ -229,3 +236,7 @@ A word on code metrics
 
 If you run a tool such as “PHP Mess Detector” on XMLTransformer, you will get pretty horrible results for the NPath and the cyclomatic complexity. I deliberately chose to build XMLTransformer as a single, standalone class, and the metrics reflect this decision. However, the test coverage is 100% and there are no known bugs, so maybe we should not pay too much attention to the metrics ;-)
 
+
+Author & License
+=========================
+This code was written by Carsten Blüm ([www.bluem.net](http://www.bluem.net)) and licensed under the BSD2 license.
