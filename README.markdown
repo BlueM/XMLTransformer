@@ -1,4 +1,5 @@
 [![Build Status](https://travis-ci.org/BlueM/XMLTransformer.png)](https://travis-ci.org/BlueM/XMLTransformer)
+[![HHVM Status](http://hhvm.h4cc.de/badge/bluem/XMLTransformer.svg)](http://hhvm.h4cc.de/package/bluem/XMLTransformer)
 
 XMLTransformer Overview
 =========================
