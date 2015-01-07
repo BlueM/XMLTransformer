@@ -1,5 +1,6 @@
 [![Build Status](https://travis-ci.org/BlueM/XMLTransformer.png)](https://travis-ci.org/BlueM/XMLTransformer)
 [![HHVM Status](http://hhvm.h4cc.de/badge/bluem/XMLTransformer.svg)](http://hhvm.h4cc.de/package/bluem/XMLTransformer)
+[![SensioLabsInsight](https://insight.sensiolabs.com/projects/3f1631ee-2286-4c0e-b21c-da192bb3efba/mini.png)](https://insight.sensiolabs.com/projects/3f1631ee-2286-4c0e-b21c-da192bb3efba)
 
 XMLTransformer Overview
 =========================
