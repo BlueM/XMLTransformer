@@ -183,11 +183,9 @@ class XMLTransformer
 
         $name = $r->prefix ? $r->prefix.':'.$r->localName : $r->localName;
 
-        if (false === $trnsf = call_user_func_array(
-            $this->callback,
-            array($name, $attributes, $type)
-        )
-        ) {
+        $trnsf = call_user_func_array($this->callback, array($name, $attributes, $type));
+
+        if (false === $trnsf) {
             if (!$r->isEmptyElement) {
                 $this->insideIgnorableTag++;
             }
@@ -236,13 +234,13 @@ class XMLTransformer
             }
             $insinside = isset($trnsf['insafter']) ? $trnsf['insafter'] : '';
         } else {
-            if (isset($trnsf['transformOuter']) and
+            if (isset($trnsf['transformOuter']) &&
                 $trnsf['transformOuter'] instanceof \Closure
             ) {
                 $this->transformMe[]      = true;
                 $this->transformerStack[] = array($trnsf['transformOuter'], '', false);
-            } elseif (isset($trnsf['transformInner']) and
-                $trnsf['transformInner'] instanceof \Closure
+            } elseif (isset($trnsf['transformInner']) &&
+                      $trnsf['transformInner'] instanceof \Closure
             ) {
                 $this->transformMe[]      = true;
                 $this->transformerStack[] = array(
@@ -389,9 +387,7 @@ class XMLTransformer
             return true;
         }
 
-        if (is_object($callback) and
-            is_callable($callback)
-        ) {
+        if (is_object($callback) && is_callable($callback)) {
             // Closure or other callable object
             return true;
         }
