@@ -4,7 +4,7 @@
     "description": "Library for transforming any kind of input XML into an output string",
     "keywords": ["xml"],
     "homepage": "https://github.com/BlueM/XMLTransformer",
-    "license": "BSD-2",
+    "license": "BSD-2-Clause",
     "authors": [
         {
             "name": "Carsten Blüm",
