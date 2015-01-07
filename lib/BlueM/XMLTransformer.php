@@ -44,9 +44,9 @@ class XMLTransformer
     protected $insideIgnorableTag = 0;
 
     /**
-     * The callback function or method
+     * The callback function, method or Closure
      *
-     * @var mixed
+     * @var string|array|Closure
      */
     protected $callback = null;
 
@@ -183,85 +183,82 @@ class XMLTransformer
 
         $name = $r->prefix ? $r->prefix.':'.$r->localName : $r->localName;
 
-        $trnsf = call_user_func_array($this->callback, array($name, $attributes, $type));
+        $rules = call_user_func_array($this->callback, array($name, $attributes, $type));
 
-        if (false === $trnsf) {
+        if (false === $rules) {
             if (!$r->isEmptyElement) {
                 $this->insideIgnorableTag++;
             }
             return; // Nothing to do
-        } elseif (null === $trnsf) {
-            $trnsf = array();
+        } elseif (null === $rules) {
+            $rules = array();
+        } else {
+            $this->checkRules($r, $name, $rules);
         }
 
-        $tag = isset($trnsf['tag']) ? $trnsf['tag'] : $name;
+        $tag = isset($rules['tag']) ? $rules['tag'] : $name;
 
-        unset($trnsf['tag']); // Reminder: keep outside the "if" block in case
+        unset($rules['tag']); // Reminder: keep outside the "if" block in case
                               // NULL was returned for the tag
 
-        if (isset($trnsf['insbefore'])) {
-            $insoutside = $trnsf['insbefore'];
-            unset($trnsf['insbefore']);
+        if (isset($rules['insbefore'])) {
+            $insertOutside = $rules['insbefore'];
+            unset($rules['insbefore']);
         } else {
-            $insoutside = '';
+            $insertOutside = '';
         }
 
-        if (isset($trnsf['insstart'])) {
-            $insinside = $trnsf['insstart'];
-            unset($trnsf['insstart']);
+        if (isset($rules['insstart'])) {
+            $insertInside = $rules['insstart'];
+            unset($rules['insstart']);
         } else {
-            $insinside = '';
+            $insertInside = '';
         }
 
         // Add attributes
         if ($tag) {
-            $tag = $this->addAttributes($tag, $attributes, $trnsf);
+            $tag = $this->addAttributes($tag, $attributes, $rules);
         }
 
         if ($r->isEmptyElement) {
-            $tag = str_replace('>', ' />', $tag);
-            if (isset($trnsf['insend'])) {
+            $tag          = str_replace('>', ' />', $tag);
+            $insertInside = isset($rules['insafter']) ? $rules['insafter'] : '';
+        } else {
+            $this->updateTransformationStack($rules, $insertOutside.$tag);
+        }
+
+        if (0 < $count = count($this->transformerStack)) {
+            // Add opening tag to stack of content to be transformed
+            $this->transformerStack[$count - 1][1] .= $insertOutside.$tag.$insertInside;
+        } else {
+            // Add opening tag to "regular" content
+            $this->content .= $insertOutside.$tag.$insertInside;
+        }
+    }
+
+    /**
+     * @param \XMLReader $r
+     * @param string     $name
+     * @param array      $rules
+     *
+     * @throws \RuntimeException
+     */
+    protected function checkRules(\XMLReader $r, $name, array $rules)
+    {
+        if ($r->isEmptyElement) {
+            if (!empty($rules['insend'])) {
                 throw new \RuntimeException(
                     '“insend” does not make sense for empty tags (here: <'.$name.'/>). '.
                     'Use “insafter”.'
                 );
             }
-            if ($insinside) {
+
+            if (!empty($rules['insstart'])) {
                 throw new \RuntimeException(
                     '“insstart” does not make sense for empty tags (here: <'.$name.'/>). '.
                     'Use “insbefore”.'
                 );
             }
-            $insinside = isset($trnsf['insafter']) ? $trnsf['insafter'] : '';
-        } else {
-            if (isset($trnsf['transformOuter']) &&
-                $trnsf['transformOuter'] instanceof \Closure
-            ) {
-                $this->transformMe[]      = true;
-                $this->transformerStack[] = array($trnsf['transformOuter'], '', false);
-            } elseif (isset($trnsf['transformInner']) &&
-                      $trnsf['transformInner'] instanceof \Closure
-            ) {
-                $this->transformMe[]      = true;
-                $this->transformerStack[] = array(
-                    $trnsf['transformInner'],
-                    '',
-                    true,
-                    strlen($insoutside.$tag)
-                );
-            } else {
-                $this->transformMe[] = false;
-            }
-        }
-
-        $content = $insoutside.$tag.$insinside;
-
-        if (0 < $count = count($this->transformerStack)) {
-            // Add opening tag to stack of content to be transformed
-            $this->transformerStack[$count - 1][1] .= $content;
-        } else {
-            // Add opening tag to "regular" content
-            $this->content .= $content;
         }
     }
 
@@ -281,29 +278,27 @@ class XMLTransformer
         }
 
         $attributes  = array_pop($this->stack);
-        $transformme = array_pop($this->transformMe);
+        $transformMe = array_pop($this->transformMe);
 
-        $name = $r->prefix ? $r->prefix . ':' . $r->localName : $r->localName;
+        $name = $r->prefix ? $r->prefix.':'.$r->localName : $r->localName;
 
-        if (false === $trnsf = call_user_func_array(
-            $this->callback,
-            array($name, $attributes, self::ELCLOSE)
-        )
-        ) {
+        $rules = call_user_func_array($this->callback, array($name, $attributes, self::ELCLOSE));
+
+        if (false === $rules) {
             return;
-        } elseif (null === $trnsf) {
-            $trnsf = array();
+        } elseif (null === $rules) {
+            $rules = array();
         }
 
-        $tag        = array_key_exists('tag', $trnsf) ? $trnsf['tag'] : $name;
-        $insinside  = isset($trnsf['insend'])   ? $trnsf['insend']   : '';
-        $insoutside = isset($trnsf['insafter']) ? $trnsf['insafter'] : '';
+        $tag           = array_key_exists('tag', $rules) ? $rules['tag'] : $name;
+        $insertInside  = isset($rules['insend'])   ? $rules['insend']   : '';
+        $insertOutside = isset($rules['insafter']) ? $rules['insafter'] : '';
 
         if ($tag) {
             $tag = "</$tag>";
         }
 
-        if ($transformme) {
+        if ($transformMe) {
             // Finish this tag by transforming its content
             $transformInfo = array_pop($this->transformerStack);
             $closure       = $transformInfo[0];
@@ -314,14 +309,14 @@ class XMLTransformer
                 $openingTagLen = $transformInfo[3];
                 $openingTag   = substr($stackContent, 0, $openingTagLen);
                 $stackContent = substr($stackContent, $openingTagLen);
-                $content      = $openingTag . $closure($stackContent . $insinside) . $tag;
+                $content      = $openingTag.$closure($stackContent.$insertInside).$tag;
             } else {
                 // Outer transformation
-                $content = $closure($stackContent . $insinside . $tag . $insoutside);
+                $content = $closure($stackContent.$insertInside.$tag.$insertOutside);
             }
         } else {
             // No transformation
-            $content = $insinside . $tag . $insoutside;
+            $content = $insertInside.$tag.$insertOutside;
         }
 
         if (0 < $count = count($this->transformerStack)) {
@@ -472,5 +467,32 @@ class XMLTransformer
             }
         }
         return "<$tag>";
+    }
+
+    /**
+     * @param array  $rules          Processing rules
+     * @param string $tagPlusContent Full opening tag, including the content to be
+     *                               added before, if defined by the processing rules.
+     */
+    protected function updateTransformationStack(array $rules, $tagPlusContent)
+    {
+        if (isset($rules['transformOuter']) &&
+            $rules['transformOuter'] instanceof \Closure
+        ) {
+            $this->transformMe[]      = true;
+            $this->transformerStack[] = array($rules['transformOuter'], '', false);
+        } elseif (isset($rules['transformInner']) &&
+            $rules['transformInner'] instanceof \Closure
+        ) {
+            $this->transformMe[]      = true;
+            $this->transformerStack[] = array(
+                $rules['transformInner'],
+                '',
+                true,
+                strlen($tagPlusContent)
+            );
+        } else {
+            $this->transformMe[] = false;
+        }
     }
 }
