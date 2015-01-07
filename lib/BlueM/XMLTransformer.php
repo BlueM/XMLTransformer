@@ -158,22 +158,22 @@ class XMLTransformer
     /**
      * Method that will be invoked for any opening or empty XML element.
      *
-     * @param \XMLReader $r
+     * @param \XMLReader $reader
      *
      * @throws \RuntimeException
      */
-    protected function nodeOpen(\XMLReader $r)
+    protected function nodeOpen(\XMLReader $reader)
     {
         if ($this->insideIgnorableTag) {
-            if (!$r->isEmptyElement) {
+            if (!$reader->isEmptyElement) {
                 $this->insideIgnorableTag++;
             }
             return;
         }
 
-        $attributes = $this->getAttributes($r);
+        $attributes = $this->getAttributes($reader);
 
-        if ($r->isEmptyElement) {
+        if ($reader->isEmptyElement) {
             $type = self::ELEMPTY;
         } else {
             // Remember the attributes, so the closing tag can access them, too
@@ -181,25 +181,20 @@ class XMLTransformer
             $type          = self::ELOPEN;
         }
 
-        $name = $r->prefix ? $r->prefix.':'.$r->localName : $r->localName;
+        $name = $reader->prefix ? $reader->prefix.':'.$reader->localName : $reader->localName;
 
         $rules = call_user_func_array($this->callback, array($name, $attributes, $type));
 
         if (false === $rules) {
-            if (!$r->isEmptyElement) {
+            if (!$reader->isEmptyElement) {
                 $this->insideIgnorableTag++;
             }
             return; // Nothing to do
         } elseif (null === $rules) {
             $rules = array();
         } else {
-            $this->checkRules($r, $name, $rules);
+            $this->checkRules($reader, $name, $rules);
         }
-
-        $tag = isset($rules['tag']) ? $rules['tag'] : $name;
-
-        unset($rules['tag']); // Reminder: keep outside the "if" block in case
-                              // NULL was returned for the tag
 
         if (isset($rules['insbefore'])) {
             $insertOutside = $rules['insbefore'];
@@ -215,37 +210,58 @@ class XMLTransformer
             $insertInside = '';
         }
 
-        // Add attributes
-        if ($tag) {
-            $tag = $this->addAttributes($tag, $attributes, $rules);
-        }
+        $tag = $this->getTag($name, $attributes, $rules, $reader->isEmptyElement);
 
-        if ($r->isEmptyElement) {
-            $tag          = str_replace('>', ' />', $tag);
+        if ($reader->isEmptyElement) {
             $insertInside = isset($rules['insafter']) ? $rules['insafter'] : '';
         } else {
             $this->updateTransformationStack($rules, $insertOutside.$tag);
         }
 
         if (0 < $count = count($this->transformerStack)) {
-            // Add opening tag to stack of content to be transformed
+            // Add to stack of content to be transformed
             $this->transformerStack[$count - 1][1] .= $insertOutside.$tag.$insertInside;
         } else {
-            // Add opening tag to "regular" content
+            // Add to "regular" content
             $this->content .= $insertOutside.$tag.$insertInside;
         }
     }
 
     /**
-     * @param \XMLReader $r
+     * @param string $name       Tag/element name of the untransformed element
+     * @param array  $attributes Tag attributes
+     * @param array  $rules      Processing rules (key "tag" will be removed, if present)
+     * @param bool   $empty      Whether this is an empty element
+     *
+     * @return string Either full opening tag incl. attributes or an empty string, in
+     *                case the tag should be removed.
+     */
+    protected function getTag($name, array $attributes, array &$rules, $empty)
+    {
+        $tag = isset($rules['tag']) ? $rules['tag'] : $name;
+        unset($rules['tag']);
+
+        if ($tag) {
+            $tag = $this->addAttributes($tag, $attributes, $rules);
+            if ($empty) {
+                $tag = str_replace('>', ' />', $tag);
+            }
+            return $tag;
+        }
+
+        return '';
+    }
+
+    /**
+     * @param \XMLReader $reader
      * @param string     $name
      * @param array      $rules
      *
      * @throws \RuntimeException
      */
-    protected function checkRules(\XMLReader $r, $name, array $rules)
+    protected function checkRules(\XMLReader $reader, $name, array $rules)
     {
-        if ($r->isEmptyElement) {
+        if ($reader->isEmptyElement) {
             if (!empty($rules['insend'])) {
                 throw new \RuntimeException(
                     '“insend” does not make sense for empty tags (here: <'.$name.'/>). '.
@@ -265,9 +281,9 @@ class XMLTransformer
     /**
      * Method that will be invoked for any closing XML element
      *
-     * @param \XMLReader $r
+     * @param \XMLReader $reader
      */
-    protected function nodeClose(\XMLReader $r)
+    protected function nodeClose(\XMLReader $reader)
     {
         if ($this->insideIgnorableTag) {
             $this->insideIgnorableTag--;
@@ -280,7 +296,7 @@ class XMLTransformer
         $attributes  = array_pop($this->stack);
         $transformMe = array_pop($this->transformMe);
 
-        $name = $r->prefix ? $r->prefix.':'.$r->localName : $r->localName;
+        $name = $reader->prefix ? $reader->prefix.':'.$reader->localName : $reader->localName;
 
         $rules = call_user_func_array($this->callback, array($name, $attributes, self::ELCLOSE));
 
@@ -393,21 +409,21 @@ class XMLTransformer
     /**
      * Returns the given node's attributes as an associative array
      *
-     * @param \XMLReader $r
+     * @param \XMLReader $reader
      *
      * @return array
      */
-    protected function getAttributes(\XMLReader $r)
+    protected function getAttributes(\XMLReader $reader)
     {
-        if (!$r->hasAttributes) {
+        if (!$reader->hasAttributes) {
             return array();
         }
         $attributes = array();
-        $r->moveToFirstAttribute();
+        $reader->moveToFirstAttribute();
         do {
-            $attributes[($r->prefix ? $r->prefix.':' : '').$r->localName] = $r->value;
-        } while ($r->moveToNextAttribute());
-        $r->moveToElement();
+            $attributes[($reader->prefix ? $reader->prefix.':' : '').$reader->localName] = $reader->value;
+        } while ($reader->moveToNextAttribute());
+        $reader->moveToElement();
         return $attributes;
     }
 
@@ -416,28 +432,28 @@ class XMLTransformer
      *
      * @param string $tag        Tag/element name.
      * @param array  $attributes Associative array of attributes
-     * @param mixed  $trnsf      Transformation "rules"
+     * @param mixed  $rules      Processing rules
      *
      * @return string
      * @throws \UnexpectedValueException
      */
-    protected function addAttributes($tag, array $attributes, $trnsf)
+    protected function addAttributes($tag, array $attributes, $rules)
     {
         static $allowed = array('insend', 'insafter', 'transformInner', 'transformOuter');
 
         foreach ($attributes as $attrname => $value) {
-            if (array_key_exists("@$attrname", $trnsf)) {
+            if (array_key_exists("@$attrname", $rules)) {
                 // There's a rule for this attribute
-                if (false === $trnsf["@$attrname"]) {
+                if (false === $rules["@$attrname"]) {
                     // Skip this attribute
-                } elseif (strncmp($trnsf["@$attrname"], '@', 1)) {
+                } elseif (strncmp($rules["@$attrname"], '@', 1)) {
                     // Returned value does not start with "@" >> Treat as value
-                    $tag .= sprintf(' %s="%s"', $attrname, htmlspecialchars($trnsf["@$attrname"]));
+                    $tag .= sprintf(' %s="%s"', $attrname, htmlspecialchars($rules["@$attrname"]));
                 } else {
                     // Rename attribute
-                    $tag .= sprintf(' %s="%s"', substr($trnsf["@$attrname"], 1), $value);
+                    $tag .= sprintf(' %s="%s"', substr($rules["@$attrname"], 1), $value);
                 }
-                unset($trnsf["@$attrname"]);
+                unset($rules["@$attrname"]);
             } else {
                 // Default behaviour: copy attribute and value
                 $tag .= sprintf(' %s="%s"', $attrname, htmlspecialchars($value));
@@ -446,7 +462,7 @@ class XMLTransformer
 
         // Loop over remaining keys in $attr (i.e.: attributes added
         // in the callback method)
-        foreach ($trnsf as $attrname => $value) {
+        foreach ($rules as $attrname => $value) {
             if ('@' == substr($attrname, 0, 1)) {
                 if ('@' == substr($value, 0, 1)) {
                     // Attribute should be renamed, but attribute was not
