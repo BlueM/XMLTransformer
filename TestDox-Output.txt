@@ -1,0 +1,43 @@
+XMLTransformer
+ [x] Invoking the transformer with invalid xml produces an error
+ [x] Invoking the transformer with an invalid callback function throws an exception
+ [x] Invoking the transformer with a valid callback function works
+ [x] Invoking the transformer with an unusable method array throws an exception
+ [x] Invoking the transformer with an invalid array throws an exception
+ [x] Invoke the transformer with a valid callback method
+ [x] Invoking the transformer with crap as callback throws an exception
+ [x] Returning an unexpected array key throws an exception
+ [x] Returning an empty array yields no modifications
+ [x] Returning nothing or null yields no modifications
+ [x] Returning false removes the tag and its content
+ [x] Returning false for the tag removes the tag but keeps the content
+ [x] Renaming a tag without namespace works
+ [x] Renaming a tag with namespaces works
+ [x] Removing a tag including content works
+ [x] Removing a tag but keeping its content works
+ [x] Removing an empty tag works
+ [x] Adding attributes with and without namespaces works
+ [x] Renaming an attribute works
+ [x] Renaming an attribute with namespaces works
+ [x] Changing attribute values with and without namespace works
+ [x] Removing an attribute works
+ [x] Only attributes which are present in the source tag are renamed
+ [x] Content can be inserted before an element
+ [x] Content can be prepended to an elements content
+ [x] Content can be appended to an elements content
+ [x] Content can be inserted after a non empty element
+ [x] Content can be inserted after an empty element
+ [x] Content can be inserted before an empty element that should be removed
+ [x] The callback closure is given the correct tag type constant as argument
+ [x] Trying to insert content at the beginning of an empty tag throws an exception
+ [x] Trying to insert content at the end of an empty tag throws an exception
+ [x] An outer transformation callback gets the unmodified content as argument
+ [x] An outer transformation replaces the tag and its content
+ [x] Outer content transformation works with nested tags to be transformed
+ [x] An inner transformation callback gets the unmodified content as argument
+ [x] An inner transformation keeps the tag but replaces its content
+ [x] Content behind nested ignorable tags is not removed
+ [x] Escaped special characters remain unmodified in attribute values
+ [x] Removing tags completely works with nested tags
+ [x] Entities get substituted
+
