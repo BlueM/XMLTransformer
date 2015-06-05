@@ -26,20 +26,19 @@ namespace BlueM;
  *
  * @package XMLTransformer
  * @author  Carsten Bluem <carsten@bluem.net>
- * @license http://www.opensource.org/licenses/bsd-license.php  BSD License
+ * @license http://www.opensource.org/licenses/bsd-license.php BSD 2-Clause License
  */
 class XMLTransformer
 {
-
     const ELOPEN  = 1;
     const ELEMPTY = 2;
     const ELCLOSE = 0;
 
     /**
-     * Flag: are we currently in a part of the XML tree that's
-     * enclosed by a tag which should be removed?
+     * Keeps track of whether we are currently in a part of the XML tree that's
+     * enclosed by a tag which should be ignored.
      *
-     * @var bool
+     * @var int
      */
     protected $insideIgnorableTag = 0;
 
@@ -86,6 +85,11 @@ class XMLTransformer
     protected $content = '';
 
     /**
+     * Force static use
+     */
+    private function __construct() { }
+
+    /**
      * Performs XML transformation of the string given as argument
      *
      * @param string                $xml      Well-formed XML string to transform
@@ -125,7 +129,9 @@ class XMLTransformer
         $xmltr = new static;
 
         if (!self::checkCallback($callback)) {
-            throw new \InvalidArgumentException('Callback must be function, method or closure');
+            throw new \InvalidArgumentException(
+                'Callback must be function, method or closure'
+            );
         }
         $xmltr->callback = $callback;
 
@@ -166,7 +172,7 @@ class XMLTransformer
     {
         if ($this->insideIgnorableTag) {
             if (!$reader->isEmptyElement) {
-                $this->insideIgnorableTag++;
+                $this->insideIgnorableTag ++;
             }
             return;
         }
@@ -187,7 +193,7 @@ class XMLTransformer
 
         if (false === $rules) {
             if (!$reader->isEmptyElement) {
-                $this->insideIgnorableTag++;
+                $this->insideIgnorableTag ++;
             }
             return; // Nothing to do
         } elseif (null === $rules) {
@@ -222,7 +228,6 @@ class XMLTransformer
             // Add to stack of content to be transformed
             $this->transformerStack[$count - 1][1] .= $insertOutside.$tag.$insertInside;
         } else {
-            // Add to "regular" content
             $this->content .= $insertOutside.$tag.$insertInside;
         }
     }
@@ -286,7 +291,7 @@ class XMLTransformer
     protected function nodeClose(\XMLReader $reader)
     {
         if ($this->insideIgnorableTag) {
-            $this->insideIgnorableTag--;
+            $this->insideIgnorableTag --;
         }
 
         if ($this->insideIgnorableTag) {
@@ -323,9 +328,9 @@ class XMLTransformer
             if ($inner) {
                 // Inner transformation
                 $openingTagLen = $transformInfo[3];
-                $openingTag   = substr($stackContent, 0, $openingTagLen);
-                $stackContent = substr($stackContent, $openingTagLen);
-                $content      = $openingTag.$closure($stackContent.$insertInside).$tag;
+                $openingTag    = substr($stackContent, 0, $openingTagLen);
+                $stackContent  = substr($stackContent, $openingTagLen);
+                $content       = $openingTag.$closure($stackContent.$insertInside).$tag;
             } else {
                 // Outer transformation
                 $content = $closure($stackContent.$insertInside.$tag.$insertOutside);
@@ -339,7 +344,6 @@ class XMLTransformer
             // Add $content to stack of content to be transformed
             $this->transformerStack[$count - 1][1] .= $content;
         } else {
-            // Add $content to "regular" content
             $this->content .= $content;
         }
     }
@@ -347,8 +351,7 @@ class XMLTransformer
     /**
      * Saves the node's text content
      *
-     * @param string $content String or whitespace content, with XML
-     *                        special characters esacaped.
+     * @param string $content String with XML special characters esacaped
      */
     protected function nodeContent($content)
     {
@@ -418,12 +421,16 @@ class XMLTransformer
         if (!$reader->hasAttributes) {
             return array();
         }
+
         $attributes = array();
         $reader->moveToFirstAttribute();
+
         do {
             $attributes[($reader->prefix ? $reader->prefix.':' : '').$reader->localName] = $reader->value;
         } while ($reader->moveToNextAttribute());
+
         $reader->moveToElement();
+
         return $attributes;
     }
 
@@ -439,7 +446,12 @@ class XMLTransformer
      */
     protected function addAttributes($tag, array $attributes, $rules)
     {
-        static $allowed = array('insend', 'insafter', 'transformInner', 'transformOuter');
+        static $allowed = array(
+            'insend'         => true,
+            'insafter'       => true,
+            'transformInner' => true,
+            'transformOuter' => true,
+        );
 
         foreach ($attributes as $attrname => $value) {
             if (array_key_exists("@$attrname", $rules)) {
@@ -475,9 +487,9 @@ class XMLTransformer
                         htmlspecialchars($value)
                     );
                 }
-            } elseif (!in_array($attrname, $allowed)) {
+            } elseif (empty($allowed[$attrname])) {
                 throw new \UnexpectedValueException(
-                    "Unexpected key \"$attrname\" in array returned by ".
+                    'Unexpected key “'.$attrname.'” in array returned by '.
                     "callback function for <$tag>."
                 );
             }

@@ -103,7 +103,7 @@ class XMLTransformerTest extends PHPUnit_Framework_TestCase
     /**
      * @test
      * @expectedException UnexpectedValueException
-     * @expectedExceptionMessage Unexpected key "unexpected" in array returned
+     * @expectedExceptionMessage Unexpected key “unexpected” in array returned
      */
     public function returningAnUnexpectedArrayKeyThrowsAnException()
     {
@@ -123,9 +123,9 @@ class XMLTransformerTest extends PHPUnit_Framework_TestCase
     public function returningAnEmptyArrayYieldsNoModifications()
     {
         $xml = "<root>\n".
-            "<element>Element content</element>\n".
-            "<empty />\n".
-            "</root>";
+               "<element>Element content</element>\n".
+               "<empty />\n".
+               "</root>";
 
         $actual = XMLTransformer::transformString(
             $xml,
@@ -143,9 +143,9 @@ class XMLTransformerTest extends PHPUnit_Framework_TestCase
     public function returningNothingOrNullYieldsNoModifications()
     {
         $xml = "<root>\n".
-            "<element>Element content</element>\n".
-            "<empty />\n".
-            "</root>";
+               "<element>Element content</element>\n".
+               "<empty />\n".
+               "</root>";
 
         $actual = XMLTransformer::transformString(
             $xml,
@@ -169,9 +169,9 @@ class XMLTransformerTest extends PHPUnit_Framework_TestCase
     public function returningFalseRemovesTheTagAndItsContent()
     {
         $xml = "<root>\n".
-            "<ignore>Element <em>content</em></ignore>\n".
-            "<empty />\n".
-            "</root>";
+               "<ignore>Element <em>content</em></ignore>\n".
+               "<empty />\n".
+               "</root>";
 
         $actual = XMLTransformer::transformString(
             $xml,
@@ -183,8 +183,8 @@ class XMLTransformerTest extends PHPUnit_Framework_TestCase
         );
 
         $exp = "<root>\n\n".
-            "<empty />\n".
-            "</root>";
+               "<empty />\n".
+               "</root>";
 
         $this->assertSame($exp, $actual);
     }
@@ -195,9 +195,9 @@ class XMLTransformerTest extends PHPUnit_Framework_TestCase
     public function returningFalseForTheTagRemovesTheTagButKeepsTheContent()
     {
         $xml = "<root>\n".
-            "<element>Element <em>content</em></element>\n".
-            "<empty />\n".
-            "</root>";
+               "<element>Element <em>content</em></element>\n".
+               "<empty />\n".
+               "</root>";
 
         $actual = XMLTransformer::transformString(
             $xml,
@@ -209,9 +209,9 @@ class XMLTransformerTest extends PHPUnit_Framework_TestCase
         );
 
         $exp = "<root>\n".
-            "Element <em>content</em>\n".
-            "<empty />\n".
-            "</root>";
+               "Element <em>content</em>\n".
+               "<empty />\n".
+               "</root>";
 
         $this->assertSame($exp, $actual);
     }
@@ -219,17 +219,17 @@ class XMLTransformerTest extends PHPUnit_Framework_TestCase
     /**
      * @test
      */
-    public function renamingATagWorks()
+    public function renamingATagWithoutNamespaceWorks()
     {
         $xml = "<root>\n".
-            "<element>Element content</element>\n".
-            "<empty/>\n".
-            "</root>";
+               "<element>Element content</element>\n".
+               "<empty/>\n".
+               "</root>";
 
         $exp = "<toplevel>\n".
-            "<a>Element content</a>\n".
-            "<b />\n".
-            "</toplevel>";
+               "<a>Element content</a>\n".
+               "<b />\n".
+               "</toplevel>";
 
         $actual = XMLTransformer::transformString(
             $xml,
@@ -253,18 +253,18 @@ class XMLTransformerTest extends PHPUnit_Framework_TestCase
     public function renamingATagWithNamespacesWorks()
     {
         $xml = '<TEI xmlns="http://www.tei-c.org/ns/1.0"'.
-            ' xmlns:rng="http://relaxng.org/ns/structure/1.0"'.
-            ' xml:lang="de">'."\n".
-            "<rng:foo>Element content</rng:foo>\n".
-            "<foo>Should not be changed</foo>\n".
-            "</TEI>";
+               ' xmlns:rng="http://relaxng.org/ns/structure/1.0"'.
+               ' xml:lang="de">'."\n".
+               "<rng:foo>Element content</rng:foo>\n".
+               "<foo>Should not be changed</foo>\n".
+               "</TEI>";
 
         $exp = '<TEI xmlns="http://www.tei-c.org/ns/1.0"'.
-            ' xmlns:rng="http://relaxng.org/ns/structure/1.0"'.
-            ' xml:lang="de">'."\n".
-            "<test>Element content</test>\n".
-            "<foo>Should not be changed</foo>\n".
-            "</TEI>";
+               ' xmlns:rng="http://relaxng.org/ns/structure/1.0"'.
+               ' xml:lang="de">'."\n".
+               "<test>Element content</test>\n".
+               "<foo>Should not be changed</foo>\n".
+               "</TEI>";
 
         $actual = XMLTransformer::transformString(
             $xml,
@@ -284,14 +284,14 @@ class XMLTransformerTest extends PHPUnit_Framework_TestCase
     public function removingATagIncludingContentWorks()
     {
         $xml = "<root>\n".
-            "<element>Element content</element>\n".
-            "<empty />\n".
-            "</root>";
+               "<element>Element content</element>\n".
+               "<empty />\n".
+               '</root>';
 
         $exp = "<root>\n".
-            "\n".
-            "<empty />\n".
-            "</root>";
+               "\n".
+               "<empty />\n".
+               '</root>';
 
         $actual = XMLTransformer::transformString(
             $xml,
@@ -308,17 +308,17 @@ class XMLTransformerTest extends PHPUnit_Framework_TestCase
     /**
      * @test
      */
-    public function removingATagWithoutContentWorks()
+    public function removingATagButKeepingItsContentWorks()
     {
         $xml = "<root>\n".
-            "<element>Element content</element>\n".
-            "<empty />\n".
-            "</root>";
+               "<element>Element content</element>\n".
+               "<empty />\n".
+               '</root>';
 
         $exp = "<root>\n".
-            "Element content\n".
-            "<empty />\n".
-            "</root>";
+               "Element content\n".
+               "<empty />\n".
+               '</root>';
 
         $actual = XMLTransformer::transformString(
             $xml,
@@ -338,12 +338,12 @@ class XMLTransformerTest extends PHPUnit_Framework_TestCase
     public function removingAnEmptyTagWorks()
     {
         $xml = "<root>\n".
-            "<empty />\n".
-            "</root>";
+               "<empty />\n".
+               '</root>';
 
         $exp = "<root>\n".
-            "\n".
-            "</root>";
+               "\n".
+               '</root>';
 
         $actual = XMLTransformer::transformString(
             $xml,
@@ -555,7 +555,7 @@ __EXP__;
     /**
      * @test
      */
-    public function makeSureOnlyAttributesThatArePresentInTheSourceTagAreRenamed()
+    public function onlyAttributesWhichArePresentInTheSourceTagAreRenamed()
     {
         $xml = <<<__XML1__
 <root a="b" c="d">
@@ -583,7 +583,7 @@ __EXP1__;
     /**
      * @test
      */
-    public function insertContentBeforeAnElement()
+    public function contentCanBeInsertedBeforeAnElement()
     {
         $xml = <<<__XML1__
 <root>
@@ -613,7 +613,7 @@ __EXP1__;
     /**
      * @test
      */
-    public function insertContentAfterAnElement()
+    public function contentCanBePrependedToAnElementsContent()
     {
         $xml = <<<__XML1__
 <root>
@@ -643,7 +643,7 @@ __EXP1__;
     /**
      * @test
      */
-    public function insertContentInsideAtTheEnd()
+    public function contentCanBeAppendedToAnElementsContent()
     {
         $xml = <<<__XML1__
 <root>
@@ -673,7 +673,7 @@ __EXP1__;
     /**
      * @test
      */
-    public function insertContentOutsideAtTheEnd()
+    public function contentCanBeInsertedAfterANonEmptyElement()
     {
         $xml = <<<__XML1__
 <root>
@@ -702,30 +702,9 @@ __EXP1__;
 
     /**
      * @test
-     */
-    public function insertContentBehindAnEmptyElement()
-    {
-        $xml = '<root><element /></root>';
-        $exp = '<root><element />Behind</root>';
-
-        $actual = XMLTransformer::transformString(
-            $xml,
-            function ($tag) {
-                if ('element' == $tag) {
-                    return array(
-                        'insafter' => 'Behind',
-                    );
-                }
-            }
-        );
-        $this->assertSame($exp, $actual);
-    }
-
-    /**
-     * @test
      * @ticket 2
      */
-    public function insertContentAfterAnEmptyTag()
+    public function contentCanBeInsertedAfterAnEmptyElement()
     {
         $xml = '<root><empty /></root>';
         $exp = '<root><empty />Content</root>';
@@ -746,19 +725,41 @@ __EXP1__;
     /**
      * @test
      */
-    public function theTagTypePassedToTheClosureIsCorrect()
+    public function contentCanBeInsertedBeforeAnEmptyElementThatShouldBeRemoved()
+    {
+        $xml = '<root><empty /></root>';
+        $exp = '<root>Stuff before</root>';
+
+        $actual = XMLTransformer::transformString(
+            $xml,
+            function ($tag) {
+                if ('empty' == $tag) {
+                    return array(
+                        'tag'       => false,
+                        'insbefore' => 'Stuff before',
+                    );
+                }
+            }
+        );
+        $this->assertSame($exp, $actual);
+    }
+
+    /**
+     * @test
+     */
+    public function theCallbackClosureIsGivenTheCorrectTagTypeConstantAsArgument()
     {
         $xml = '<root><a><b>Hello world</b></a><c/></root>';
 
         $actual = XMLTransformer::transformString(
             $xml,
             function ($tag, $attributes, $type) {
-                if ($type == BlueM\XMLTransformer::ELOPEN) {
+                if ($type === BlueM\XMLTransformer::ELOPEN) {
                     return array(
-                        'tag' => false,
+                        'tag'      => false,
                         'insstart' => "<$tag>"
                     );
-                } elseif ($type == BlueM\XMLTransformer::ELCLOSE) {
+                } elseif ($type === BlueM\XMLTransformer::ELCLOSE) {
                     return array(
                         'tag'    => false,
                         'insend' => "</$tag>"
@@ -813,29 +814,7 @@ __EXP1__;
     /**
      * @test
      */
-    public function insertContentBeforeAnEmptyTagToBeRemoved()
-    {
-        $xml = '<root><empty /></root>';
-        $exp = '<root>Stuff before</root>';
-
-        $actual = XMLTransformer::transformString(
-            $xml,
-            function ($tag) {
-                if ('empty' == $tag) {
-                    return array(
-                        'tag'       => false,
-                        'insbefore' => 'Stuff before',
-                    );
-                }
-            }
-        );
-        $this->assertSame($exp, $actual);
-    }
-
-    /**
-     * @test
-     */
-    public function outerContentTransformationReturnsInputUnmodified()
+    public function anOuterTransformationCallbackGetsTheUnmodifiedContentAsArgument()
     {
         $xml = '<root><element>Element <tag>content</tag></element></root>';
 
@@ -845,6 +824,9 @@ __EXP1__;
                 if ('element' == $tag) {
                     return array(
                         'transformOuter' => function ($str) {
+                            if ('<element>Element <tag>content</tag></element>' !== $str) {
+                                throw new \UnexpectedValueException('Wrong element content');
+                            }
                             return $str;
                         },
                     );
@@ -857,23 +839,23 @@ __EXP1__;
     /**
      * @test
      */
-    public function outerContentTransformationGetsTheExpectedInput()
+    public function anOuterTransformationReplacesTheTagAndItsContent()
     {
-        $xml = '<root><element abc="def">Element <tag>content</tag></element></root>';
+        $xml = '<root><element a="b">Element <tag>content</tag></element><c/></root>';
 
         $actual = XMLTransformer::transformString(
             $xml,
             function ($tag) {
                 if ('element' == $tag) {
                     return array(
-                        'transformOuter' => function () {
-                            return '<element abc="def">Element <tag>content</tag></element>';
+                        'transformOuter' => function ($str) {
+                            return '<foo />';
                         },
                     );
                 }
             }
         );
-        $this->assertSame($xml, $actual);
+        $this->assertSame('<root><foo /><c /></root>', $actual);
     }
 
     /**
@@ -909,9 +891,9 @@ __EXP1__;
     /**
      * @test
      */
-    public function innerContentTransformationGetsTheExpectedInputAndReplacesTheTagsContent()
+    public function anInnerTransformationCallbackGetsTheUnmodifiedContentAsArgument()
     {
-        $xml = '<root><element abc="Wörks with Mültibyte"><tag xml:id="foo">content</tag></element></root>';
+        $xml = '<root><element>Element <tag>content</tag></element></root>';
 
         $actual = XMLTransformer::transformString(
             $xml,
@@ -919,17 +901,38 @@ __EXP1__;
                 if ('element' == $tag) {
                     return array(
                         'transformInner' => function ($str) {
-                                return '<tag xml:id="foo">content</tag>' === $str ? 'OK' : 'Fail';
-                            },
+                            if ('Element <tag>content</tag>' !== $str) {
+                                throw new \UnexpectedValueException('Wrong element content');
+                            }
+                            return $str;
+                        },
                     );
                 }
             }
         );
+        $this->assertSame($xml, $actual);
+    }
 
-        $this->assertSame(
-            '<root><element abc="Wörks with Mültibyte">OK</element></root>',
-            $actual
+    /**
+     * @test
+     */
+    public function anInnerTransformationKeepsTheTagButReplacesItsContent()
+    {
+        $xml = '<root><element a="b">Element <tag>content</tag></element><c/></root>';
+
+        $actual = XMLTransformer::transformString(
+            $xml,
+            function ($tag) {
+                if ('element' == $tag) {
+                    return array(
+                        'transformInner' => function ($str) {
+                            return 'Foo';
+                        },
+                    );
+                }
+            }
         );
+        $this->assertSame('<root><element a="b">Foo</element><c /></root>', $actual);
     }
 
     /**
@@ -1038,6 +1041,7 @@ class TestObject
 
     /**
      * Dummy method
+     *
      * @param $tag
      *
      * @return array
@@ -1053,6 +1057,7 @@ class TestObject
 
 /**
  * Dummy function used to test using a function as callback
+ *
  * @param $tag
  *
  * @return array
