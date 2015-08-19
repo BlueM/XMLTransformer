@@ -5,15 +5,14 @@ require_once __DIR__.'/../lib/BlueM/XMLTransformer.php';
 use BlueM\XMLTransformer;
 
 /**
- * Test class for XMLTransformer.
+ * Tests for XMLTransformer
  *
  * @package XMLTransformer
  * @author  Carsten Bluem <carsten@bluem.net>
- * @license http://www.opensource.org/licenses/bsd-license.php  BSD License
+ * @license http://www.opensource.org/licenses/bsd-license.php BSD 2-Clause License
  */
 class XMLTransformerTest extends PHPUnit_Framework_TestCase
 {
-
     /**
      * @test
      * @expectedException PHPUnit_Framework_Error_Warning
