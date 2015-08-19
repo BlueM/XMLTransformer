@@ -85,9 +85,17 @@ class XMLTransformer
     protected $content = '';
 
     /**
+     * @var bool
+     */
+    private $preFiveFour;
+
+    /**
      * Force static use
      */
-    private function __construct() { }
+    private function __construct()
+    {
+        $this->preFiveFour = version_compare(PHP_VERSION, '5.4') < 0;
+    }
 
     /**
      * Performs XML transformation of the string given as argument
@@ -189,8 +197,15 @@ class XMLTransformer
 
         $name = $reader->prefix ? $reader->prefix.':'.$reader->localName : $reader->localName;
 
-        $callback = $this->callback; // Workaround for being able to pass args by ref
-        $rules = $callback($name, $attributes, $type);
+        if ($this->preFiveFour) {
+            $rules = call_user_func_array(
+                $this->callback,
+                array($name, $attributes, $type)
+            );
+        } else {
+            $callback = $this->callback; // Workaround for being able to pass args by ref
+            $rules    = $callback($name, $attributes, $type);
+        }
 
         if (false === $rules) {
             if (!$reader->isEmptyElement) {
@@ -304,8 +319,15 @@ class XMLTransformer
 
         $name = $reader->prefix ? $reader->prefix.':'.$reader->localName : $reader->localName;
 
-        $callback = $this->callback; // Workaround for being able to pass args by ref
-        $rules    = $callback($name, $attributes, self::ELCLOSE);
+        if ($this->preFiveFour) {
+            $rules = call_user_func_array(
+                $this->callback,
+                array($name, $attributes, self::ELCLOSE)
+            );
+        } else {
+            $callback = $this->callback; // Workaround for being able to pass args by ref
+            $rules    = $callback($name, $attributes, self::ELCLOSE);
+        }
 
         if (false === $rules) {
             return;

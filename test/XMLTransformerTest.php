@@ -53,6 +53,23 @@ class XMLTransformerTest extends PHPUnit_Framework_TestCase
 
     /**
      * @test
+     */
+    public function invokingTheTransformerWithAValidCallbackFunctionWorksWhenArgumentsAreReferences()
+    {
+        if (version_compare(PHP_VERSION, '5.4') < 0) {
+            $this->markTestSkipped('Test not applicable when on PHP 5.3');
+        } else {
+            $actual = XMLTransformer::transformString(
+                '<xml foo="bar"></xml>',
+                'valid_function_by_ref'
+            );
+
+            $this->assertSame('<xml></xml>', $actual);
+        }
+    }
+
+    /**
+     * @test
      * @expectedException InvalidArgumentException
      * @expectedExceptionMessage it must have exactly 2
      */
@@ -1067,4 +1084,17 @@ function valid_function($tag)
         'tag'      => false,
         'insstart' => "Callback function was called for <$tag>",
     );
+}
+
+/**
+ * Dummy function used to test using a function as callback
+ *
+ * @param $tag
+ *
+ * @return array
+ */
+function valid_function_by_ref($tag, &$attributes)
+{
+    $attributes = array();
+    return null;
 }
