@@ -47,7 +47,7 @@ class XMLTransformer
      *
      * @var string|array|Closure
      */
-    protected $callback = null;
+    protected $callback;
 
     /**
      * Indexed array keeping track of open tags, so closing nodes can
@@ -189,7 +189,8 @@ class XMLTransformer
 
         $name = $reader->prefix ? $reader->prefix.':'.$reader->localName : $reader->localName;
 
-        $rules = call_user_func_array($this->callback, array($name, $attributes, $type));
+        $callback = $this->callback; // Workaround for being able to pass args by ref
+        $rules = $callback($name, $attributes, $type);
 
         if (false === $rules) {
             if (!$reader->isEmptyElement) {
@@ -303,7 +304,8 @@ class XMLTransformer
 
         $name = $reader->prefix ? $reader->prefix.':'.$reader->localName : $reader->localName;
 
-        $rules = call_user_func_array($this->callback, array($name, $attributes, self::ELCLOSE));
+        $callback = $this->callback; // Workaround for being able to pass args by ref
+        $rules    = $callback($name, $attributes, self::ELCLOSE);
 
         if (false === $rules) {
             return;
@@ -382,31 +384,26 @@ class XMLTransformer
         if (is_string($callback)) {
             // Function
             if (!function_exists($callback)) {
-                throw new \InvalidArgumentException("Invalid callback function");
+                throw new \InvalidArgumentException('Invalid callback function');
             }
             return true;
         }
 
         if (is_array($callback)) {
             // Method
-            if (2 != count($callback)) {
+            if (2 !== count($callback)) {
                 throw new \InvalidArgumentException(
-                    "When an array is passed as callback, it must have exactly 2 members"
+                    'When an array is passed as callback, it must have exactly 2 members'
                 );
             }
             list($class, $method) = $callback;
             if (!is_callable(array($class, $method))) {
-                throw new \InvalidArgumentException("Invalid callback method");
+                throw new \InvalidArgumentException('Invalid callback method');
             }
             return true;
         }
 
-        if (is_object($callback) && is_callable($callback)) {
-            // Closure or other callable object
-            return true;
-        }
-
-        return false;
+        return is_object($callback) && is_callable($callback);
     }
 
     /**
@@ -475,8 +472,8 @@ class XMLTransformer
         // Loop over remaining keys in $attr (i.e.: attributes added
         // in the callback method)
         foreach ($rules as $attrname => $value) {
-            if ('@' == substr($attrname, 0, 1)) {
-                if ('@' == substr($value, 0, 1)) {
+            if ('@' === substr($attrname, 0, 1)) {
+                if ('@' === substr($value, 0, 1)) {
                     // Attribute should be renamed, but attribute was not
                     // present in source tag >> nothing to rename >> ignore.
                 } elseif ($value !== false) {
