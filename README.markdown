@@ -7,7 +7,7 @@ XMLTransformer Overview
 
 What is it?
 --------------
-XMLTransformer is a PHP class for transforming any kind of input XML into an output string. This output string does not have to be XML, but can also be, for instance, HTML or plain text.
+XMLTransformer is a PHP library for transforming any kind of input XML into an output string. This output string does not have to be XML, but can also be, for instance, HTML or plain text.
 
 
 What kind of transformations can it perform?
@@ -48,18 +48,19 @@ You pass the input XML and the name of a callback function (or the name of a cal
 
 For each tag (opening, closing or empty) the callback function will be called with the tag’s name, its attributes and information on whether it is an opening, empty or closing tag. Now, your function/method/closure can return one of three things:
 
-* An array (which describes what transformations should be performed
-* false (meaning: discard this tag, its attributes as well as any tags and CDATA inside it)
-* null (meaning: don’t modify anything – this is the default behaviour, i.e.: if the callback function is empty, nothing is changed)
+* An array (which describes what transformations should be performed – see below)
+* false (meaning: discard this tag, its attributes as well as any tags and any child elements)
+* null (meaning: don’t modify anything – this is the default behaviour, i.e.: if the callback returns nothing, nothing is changed.
+
 
 Callback function arguments
 ----------------------------
 
-The callback function/mehod/closure should accept three arguments:
+The callback function/method/closure should accept three arguments:
 
-* The tag name
-* The tag’s attributes (an associative array of name=>value pairs, where the name contains the namespace, if the attribute is not from the default namespace)
-* An int, which will be XMLTransformer::ELOPEN for an opening tag, XMLTransformer::ELEMPTY for an empty tag and XMLTransformer::ELCLOSE for a closing tag.
+* The element/tag name
+* The element/tag’s attributes (an associative array of name=>value pairs, where the name contains the namespace, if the attribute is not from the default namespace)
+* An element type constant, which will be `XMLTransformer::ELOPEN` for an opening tag, `XMLTransformer::ELEMPTY` for an empty tag and `XMLTransformer::ELCLOSE` for a closing tag.
 
 Please note that the attributes will *always* be given, even for a closing tag.
 
@@ -84,12 +85,14 @@ Additionally, for handling attributes, array keys in the form of “@<name>” c
 
 For instance, this return array …
 
-	return array(
-		'tag'=>'demo',
-		'@xml:id'=>'id',
-		'@foo'=>false,
-		'insafter'=>'!',
-	);
+```php
+return array(
+	'tag'      => 'demo',
+	'@xml:id'  => 'id',
+	'@foo'     => false,
+	'insafter' => '!',
+);
+```
 
 … would mean:
 * Rename the tag to “demo”
@@ -97,140 +100,181 @@ For instance, this return array …
 * Remove the “@foo” attribute
 * Insert the string “!” after the closing tag (or directly after the tag, if it’s an empty tag)
 
+Please note that (as XMLTransformer is not restricted to produce XML) no automatic escaping is done to values returned by the array. Only exception: attribute values, as XMLTransformer assumes that if you set attribute values, you want XML or HTML output.
+
+
+Passing attributes by reference
+--------------------------------
+Since v1.1 (but only for PHP 5.4 and higher), the callback can accept the arguments’ array by reference, therefore allowing direct manipulation of the attributes. This can be handy when changing or removing a large number of attributes or when only a prefix or suffix (or namespace) of attributes’ names is known in advance.
+
+See below for an example.
+
 
 Examples
 ===========
 
 All of the examples below assume that your code includes the following lines in order to load the class and to import the namespaced class:
 
-	require_once '/path/to/repository-clone/lib/BlueM/XMLTransformer.php';
-	// Alternatively, you can use PSR-0 autoloading
-	use BlueM\XMLTransformer;
-
+```php
+require_once '/path/to/repository-clone/lib/BlueM/XMLTransformer.php';
+// Alternatively, you can use PSR-0 autoloading
+use BlueM\XMLTransformer;
+```
 
 Hello world
 ------------
-	echo XMLTransformer::transformString(
-		'<root><element>Hello world</element></root>',
-		function($tag, $attributes, $opening) {
-			return array('tag'=>false);
-		}
-	);
-	// Will output “Hello World”.
-	// Explanation: Returning false for key “tag” will remove the tag,
-	//              but keep its content.
+```php
+echo XMLTransformer::transformString(
+	'<root><element>Hello world</element></root>',
+	function($tag, $attributes, $opening) {
+		return array(
+		    'tag'=>false, <-- Removes tag, but keeps content
+		);
+	}
+);
+// Result: “Hello World”.
+```
 
 Multilingual Hello world
 ---------------------------
-	function transform($tag, $attributes, $opening) {
-		if ('hello-world' == $tag) {
-			if (isset($attributes['xml:lang']) and
-				'de' == $attributes['xml:lang']) {
-				$str = 'Hallo Welt';
-			} else {
-				$str = 'Hello world';
-			}
-			return array(
-				'tag'=>false,
-				'insbefore'=>$str,
-			);
+```php
+function transform($tag, $attributes, $opening) {
+	if ('hello-world' == $tag) {
+		if (isset($attributes['xml:lang']) and
+			'de' == $attributes['xml:lang']) {
+			$str = 'Hallo Welt';
+		} else {
+			$str = 'Hello world';
 		}
-
-		if ('root' == $tag) {
-			// We do not want the enclosing <root> tags in the output
-			return array('tag'=>false);
-		}
+		return array(
+			'tag'       => false, // <-- Remove the tag, keep content
+			'insbefore' => $str,  // <- Insert literal content
+		);
 	}
 
-	echo XMLTransformer::transformString(
-		'<root><hello-world xml:lang="de" /></root>',
-		'transform'
-	);
-	// Will output “Hallo Welt”
+	if ('root' == $tag) {
+		// We do not want the enclosing <root> tags in the output
+		return array('tag'=>false);
+	}
+}
 
-	echo XMLTransformer::transformString(
-		'<root><hello-world xml:lang="en" /></root>',
-		'transform'
-	);
-	// Will output “Hello world”
+echo XMLTransformer::transformString(
+	'<root><hello-world xml:lang="de" /></root>',
+	'transform'
+);
+// Result: “Hallo Welt”
 
-	// Explanation: In addition to the last example, we return
-	//              key “insbefore”, which will insert literal content,
-	//              which in this example is set based on the xml:lang
-	//              attribute.
-
+echo XMLTransformer::transformString(
+	'<root><hello-world xml:lang="en" /></root>',
+	'transform'
+);
+// Result: “Hello world”
+```
 
 Removing tags including all of their content
 --------------------------------------------
-	echo XMLTransformer::transformString(
-		'<root><remove>Hello</remove><keep>World</keep>.</root>',
-			function($tag, $attributes, $opening) {
-				switch ($tag) {
-					case 'remove':
-						// Returning false will remove the tag
-						// and everything inside it.
-						return false;
-					case 'root':
-					case 'keep':
-						// Returning false as value of the array
-						// key "tag" will remove the tag, but keep
-						// its content.
-						return array('tag'=>false);
-						break;
-					default:
-						// Returning null is not necessary, as this
-						// is the default behaviour. It is equivalent
-						// to "Do not change anything."
-						return null;
-				}
+```php
+echo XMLTransformer::transformString(
+	'<root><remove>Hello </remove>World</root>',
+		function($tag, $attributes, $opening) {
+			switch ($tag) {
+				case 'remove':
+					return false; // <-- Removes tag incl. content
+				case 'root':
+				case 'keep':
+					return array('tag'=>false); // <-- Remove tag, keep content
+					break;
+				default:
+					// Returning null is not necessary, as this
+					// is the default behaviour. It is equivalent
+					// to "Do not change anything."
+					return null;
 			}
-	);
-	// Will output “World.”
+		}
+);
+// Result: “World”
+```
 
-Renaming attributes
--------------------
-	echo XMLTransformer::transformString(
-		'<root xml:id="abc"><bla xml:id="def"/></root>',
-			function($tag, $attributes, $opening) {
-				// The next line means "Rename the attribute from
-				// 'xml:id' to 'id'
-				return array('@xml:id'=>'@id');
+Changing attribute values
+-------------------------
+```php
+echo XMLTransformer::transformString(
+	'<root abc="def"></root>',
+	function($tag, $attributes, $opening) {
+		return array(
+			'@abc' => 'xyz'
+		);
+	}
+);
+// Result: “<root abc="xyz"></root>”
+// Please note that empty tags will always be returned with
+// a space before the slash.
+```
+
+Adding, renaming and removing attributes
+---------------------------------------
+```php
+echo XMLTransformer::transformString(
+	'<root xml:id="abc"><bla xml:id="def" blah="yes"/></root>',
+	function($tag, $attributes, $opening) {
+		return array(
+			'@foo'    => 'bar' // Add attribute "foo" with value "bar"
+			'blah'    => false // Remove attribute "blah"
+			'@xml:id' => '@id' // Rename attribute "xml:id" to "id"
+		);
+	}
+);
+// Result: “<root id="abc"><bla foo="bar" id="def" /></root>”
+// Please note that empty tags will always be returned with
+// a space before the slash.
+```
+
+Modifying attributes by reference
+---------------------------------
+```php
+echo XMLTransformer::transformString(
+	'<root xml:a="a" xml:b="b" id="foo">Content</root>',
+	function($tag, &$attributes, $opening) {
+		foreach ($attributes as $name => $value) {
+			if ('xml:' === substr($name, 0, 4)) {
+				unset($attributes[$name]); // Drop attributes in "xml" namespace
 			}
-	);
-	// Will output “<root id="abc"><bla id="def" /></root>”
-	// Please note that empty tags will always be returned with
-	// a space before the slash.
-
+		}
+	}
+);
+// Result: “<root id="foo">Content</root>”
+```
 
 Modifying content by subclassing
 --------------------------------
-Some time ago, I had the task of publishing a [TEI](http://www.tei-c.org) XML document which contained characters with accents in Latin parts of the text. The accents should not be removed from the source document, but should not be presented in the resulting application. Solution: Subclass XMLTransformer, overwrite nodeContent() and perform the desired normalization, if the current element or one of its ancestors has an @xml:lang attribute value of “la”.
+Some time ago, I had the task of publishing a [TEI](http://www.tei-c.org) XML document which contained characters with accents in Latin parts of the text. The accents should not be removed from the source document, but should not be presented in the resulting application. Solution: Subclass XMLTransformer, overwrite nodeContent() and perform the desired normalization, if the current element or one of its ancestors has an `@xml:lang` attribute value of “la”.
 
 This is the code:
 
-	class NoLatinAccentsXMLTransformer extends XMLTransformer {
+```php
+class NoLatinAccentsXMLTransformer extends XMLTransformer {
 
-		protected function nodeContent($content) {
+	protected function nodeContent($content) {
 
-			// Get the current node's attributes
-			for ($i = count($this->stack); $i >= 0; $i --) {
-				if (empty($this->stack[$i]['xml:lang'])) {
-					// Keep on traversing the array until we find the
-					// nearest ancestor node with an @xml:lang attribute
-					continue;
-				}
-				break;
+		// Get the current node's attributes
+		for ($i = count($this->stack); $i >= 0; $i --) {
+			if (empty($this->stack[$i]['xml:lang'])) {
+				// Keep on traversing the array until we find the
+				// nearest ancestor node with an @xml:lang attribute
+				continue;
 			}
-
-			if ('la' == $this->stack[$i]['xml:lang']) {
-				// We are currently in Latin context.
-				// Do the normalization by modifying $content.
-			}
-
-			parent::nodeContent($content);
+			break;
 		}
 
+		if ('la' == $this->stack[$i]['xml:lang']) {
+			// We are currently in Latin context.
+			// Do the normalization by modifying $content directly
+		}
+
+		parent::nodeContent($content);
 	}
+}
+```
 
 
 A word on code metrics
@@ -242,3 +286,10 @@ If you run a tool such as “PHP Mess Detector” on XMLTransformer, you will ge
 Author & License
 =========================
 This code was written by Carsten Blüm ([www.bluem.net](http://www.bluem.net)) and licensed under the BSD2 license.
+
+
+Changes from earlier versions
+=============================
+
+## From 1.0.3 to 1.1
+* The callback function/method/closure can receive the attributes by reference. See “Passing attributes by reference” above.
