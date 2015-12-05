@@ -128,7 +128,7 @@ echo XMLTransformer::transformString(
 	'<root><element>Hello world</element></root>',
 	function($tag, $attributes, $opening) {
 		return array(
-		    'tag'=>false, <-- Removes tag, but keeps content
+		    'tag'=>false, // <-- Removes tag, but keeps content
 		);
 	}
 );
