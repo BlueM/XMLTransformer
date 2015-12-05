@@ -139,7 +139,8 @@ class XMLTransformerTest extends PHPUnit_Framework_TestCase
     public function returningAnEmptyArrayYieldsNoModifications()
     {
         $xml = "<root>\n".
-               "<element>Element content</element>\n".
+               "<element1>Element content</element1>\n".
+               "<element2><![CDATA[This is content: < & >]]> <![CDATA[More <strong>cdata</strong>.]]></element2>\n".
                "<empty />\n".
                '</root>';
 
@@ -151,6 +152,34 @@ class XMLTransformerTest extends PHPUnit_Framework_TestCase
         );
 
         $this->assertSame($xml, $actual);
+    }
+
+    /**
+     * @test
+     */
+    public function returning_an_empty_array_only_escapes_CDATA_if_CDATA_should_not_be_preserved()
+    {
+        $xml = "<root>\n".
+               "<element1>Element content</element1>\n".
+               "<element2><![CDATA[This is content: < & >]]> <![CDATA[More <strong>cdata</strong>]]></element2>\n".
+               "<empty />\n".
+               '</root>';
+
+        $exp = "<root>\n".
+               "<element1>Element content</element1>\n".
+               "<element2>This is content: &lt; &amp; &gt; More &lt;strong&gt;cdata&lt;/strong&gt;</element2>\n".
+               "<empty />\n".
+               '</root>';
+
+        $actual = XMLTransformer::transformString(
+            $xml,
+            function () {
+                return array();
+            },
+            false
+        );
+
+        $this->assertSame($exp, $actual);
     }
 
     /**
@@ -327,19 +356,21 @@ class XMLTransformerTest extends PHPUnit_Framework_TestCase
     public function removingATagButKeepingItsContentWorks()
     {
         $xml = "<root>\n".
-               "<element>Element content</element>\n".
+               "<element1>Element content</element1>\n".
+               "<element2><![CDATA[Hello world < & >]]></element2>\n".
                "<empty />\n".
                '</root>';
 
         $exp = "<root>\n".
                "Element content\n".
+               "<![CDATA[Hello world < & >]]>\n".
                "<empty />\n".
                '</root>';
 
         $actual = XMLTransformer::transformString(
             $xml,
             function ($tag) {
-                if ('element' === $tag) {
+                if ('element1' === $tag || 'element2' === $tag) {
                     return array('tag' => false);
                 }
             }

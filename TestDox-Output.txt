@@ -2,12 +2,14 @@ XMLTransformer
  [x] Invoking the transformer with invalid xml produces an error
  [x] Invoking the transformer with an invalid callback function throws an exception
  [x] Invoking the transformer with a valid callback function works
+ [x] Invoking the transformer with a valid callback function works when arguments are references
  [x] Invoking the transformer with an unusable method array throws an exception
  [x] Invoking the transformer with an invalid array throws an exception
  [x] Invoke the transformer with a valid callback method
  [x] Invoking the transformer with crap as callback throws an exception
  [x] Returning an unexpected array key throws an exception
  [x] Returning an empty array yields no modifications
+ [x] returning an empty array only escapes CDATA if CDATA should not be preserved
  [x] Returning nothing or null yields no modifications
  [x] Returning false removes the tag and its content
  [x] Returning false for the tag removes the tag but keeps the content

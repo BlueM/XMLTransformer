@@ -45,7 +45,7 @@ class XMLTransformer
     /**
      * The callback function, method or Closure
      *
-     * @var string|array|Closure
+     * @var string|array|\Closure
      */
     protected $callback;
 
@@ -90,6 +90,11 @@ class XMLTransformer
     private $preFiveFour;
 
     /**
+     * @var bool
+     */
+    private $keepCData;
+
+    /**
      * Force static use
      */
     private function __construct()
@@ -128,11 +133,15 @@ class XMLTransformer
      *            element's content as a string.
      *          Anything for which neither false or an appropriate array
      *          value is returned, is left unmodified.
+     * @param bool                  $keepCData If false (default: true), CDATA content
+     *                                         is not retained as CDATA, but as PCDATA
+     *                                         with < and > and & escaped
      *
      * @return string XML string
      * @throws \InvalidArgumentException
+     * @throws \RuntimeException
      */
-    public static function transformString($xml, $callback)
+    public static function transformString($xml, $callback, $keepCData = true)
     {
         $xmltr = new static;
 
@@ -141,7 +150,9 @@ class XMLTransformer
                 'Callback must be function, method or closure'
             );
         }
-        $xmltr->callback = $callback;
+
+        $xmltr->callback  = $callback;
+        $xmltr->keepCData = (bool) $keepCData;
 
         $r = new \XMLReader;
         $r->XML($xml);
@@ -159,6 +170,9 @@ class XMLTransformer
                 case (\XMLReader::SIGNIFICANT_WHITESPACE):
                 case (\XMLReader::WHITESPACE):
                     $xmltr->nodeContent($r->value);
+                    break;
+                case (\XMLReader::CDATA):
+                    $xmltr->cDataNodeContent($r->value);
                     break;
                 case (\XMLReader::TEXT):
                     $xmltr->nodeContent(htmlspecialchars($r->value));
@@ -256,6 +270,8 @@ class XMLTransformer
      *
      * @return string Either full opening tag incl. attributes or an empty string, in
      *                case the tag should be removed.
+     *
+     * @throws \UnexpectedValueException
      */
     protected function getTag($name, array $attributes, array &$rules, $empty)
     {
@@ -389,6 +405,20 @@ class XMLTransformer
         } else {
             // Add content to "regular" content
             $this->content .= $content;
+        }
+    }
+
+    /**
+     * Saves the node's text content
+     *
+     * @param string $content CDATA content
+     */
+    protected function cDataNodeContent($content)
+    {
+        if ($this->keepCData) {
+            $this->nodeContent("<![CDATA[$content]]>");
+        } else {
+            $this->nodeContent(htmlspecialchars($content));
         }
     }
 
@@ -529,7 +559,7 @@ class XMLTransformer
             $this->transformMe[]      = true;
             $this->transformerStack[] = array($rules['transformOuter'], '', false);
         } elseif (isset($rules['transformInner']) &&
-            $rules['transformInner'] instanceof \Closure
+                  $rules['transformInner'] instanceof \Closure
         ) {
             $this->transformMe[]      = true;
             $this->transformerStack[] = array(
