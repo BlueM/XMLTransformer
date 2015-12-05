@@ -291,5 +291,8 @@ This code was written by Carsten Blüm ([www.bluem.net](http://www.bluem.net)) a
 Changes from earlier versions
 =============================
 
+## From 1.1 to 1.2
+* Adds missing support for handling CDATA. By default, CDATA sections are retained, but by setting the third argument to `transformString()` to false, CDATA content is replaced with but as PCDATA content with `<` and `>` and `&` escaped.
+
 ## From 1.0.3 to 1.1
 * The callback function/method/closure can receive the attributes by reference. See “Passing attributes by reference” above.
