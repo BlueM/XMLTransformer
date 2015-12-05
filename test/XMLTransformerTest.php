@@ -48,7 +48,7 @@ class XMLTransformerTest extends PHPUnit_Framework_TestCase
             '<xml></xml>',
             'valid_function'
         );
-        $this->assertSame("Callback function was called for <xml>", $actual);
+        $this->assertSame('Callback function was called for <xml>', $actual);
     }
 
     /**
@@ -103,7 +103,7 @@ class XMLTransformerTest extends PHPUnit_Framework_TestCase
             '<xml></xml>',
             array('TestObject', 'transform')
         );
-        $this->assertSame("Callback method was called for <xml>", $actual);
+        $this->assertSame('Callback method was called for <xml>', $actual);
     }
 
     /**
@@ -141,7 +141,7 @@ class XMLTransformerTest extends PHPUnit_Framework_TestCase
         $xml = "<root>\n".
                "<element>Element content</element>\n".
                "<empty />\n".
-               "</root>";
+               '</root>';
 
         $actual = XMLTransformer::transformString(
             $xml,
@@ -161,7 +161,7 @@ class XMLTransformerTest extends PHPUnit_Framework_TestCase
         $xml = "<root>\n".
                "<element>Element content</element>\n".
                "<empty />\n".
-               "</root>";
+               '</root>';
 
         $actual = XMLTransformer::transformString(
             $xml,
@@ -187,12 +187,12 @@ class XMLTransformerTest extends PHPUnit_Framework_TestCase
         $xml = "<root>\n".
                "<ignore>Element <em>content</em></ignore>\n".
                "<empty />\n".
-               "</root>";
+               '</root>';
 
         $actual = XMLTransformer::transformString(
             $xml,
             function ($tag) {
-                if ('ignore' == $tag) {
+                if ('ignore' === $tag) {
                     return false;
                 }
             }
@@ -200,7 +200,7 @@ class XMLTransformerTest extends PHPUnit_Framework_TestCase
 
         $exp = "<root>\n\n".
                "<empty />\n".
-               "</root>";
+               '</root>';
 
         $this->assertSame($exp, $actual);
     }
@@ -213,12 +213,12 @@ class XMLTransformerTest extends PHPUnit_Framework_TestCase
         $xml = "<root>\n".
                "<element>Element <em>content</em></element>\n".
                "<empty />\n".
-               "</root>";
+               '</root>';
 
         $actual = XMLTransformer::transformString(
             $xml,
             function ($tag) {
-                if ('element' == $tag) {
+                if ('element' === $tag) {
                     return array('tag' => false);
                 }
             }
@@ -227,7 +227,7 @@ class XMLTransformerTest extends PHPUnit_Framework_TestCase
         $exp = "<root>\n".
                "Element <em>content</em>\n".
                "<empty />\n".
-               "</root>";
+               '</root>';
 
         $this->assertSame($exp, $actual);
     }
@@ -240,20 +240,20 @@ class XMLTransformerTest extends PHPUnit_Framework_TestCase
         $xml = "<root>\n".
                "<element>Element content</element>\n".
                "<empty/>\n".
-               "</root>";
+               '</root>';
 
         $exp = "<toplevel>\n".
                "<a>Element content</a>\n".
                "<b />\n".
-               "</toplevel>";
+               '</toplevel>';
 
         $actual = XMLTransformer::transformString(
             $xml,
             function ($tag) {
-                if ('root' == $tag) {
+                if ('root' === $tag) {
                     return array('tag' => 'toplevel');
                 }
-                if ('element' == $tag) {
+                if ('element' === $tag) {
                     return array('tag' => 'a');
                 }
                 return array('tag' => 'b');
@@ -273,19 +273,19 @@ class XMLTransformerTest extends PHPUnit_Framework_TestCase
                ' xml:lang="de">'."\n".
                "<rng:foo>Element content</rng:foo>\n".
                "<foo>Should not be changed</foo>\n".
-               "</TEI>";
+               '</TEI>';
 
         $exp = '<TEI xmlns="http://www.tei-c.org/ns/1.0"'.
                ' xmlns:rng="http://relaxng.org/ns/structure/1.0"'.
                ' xml:lang="de">'."\n".
                "<test>Element content</test>\n".
                "<foo>Should not be changed</foo>\n".
-               "</TEI>";
+               '</TEI>';
 
         $actual = XMLTransformer::transformString(
             $xml,
             function ($tag) {
-                if ('rng:foo' == $tag) {
+                if ('rng:foo' === $tag) {
                     return array('tag' => 'test');
                 }
             }
@@ -312,7 +312,7 @@ class XMLTransformerTest extends PHPUnit_Framework_TestCase
         $actual = XMLTransformer::transformString(
             $xml,
             function ($tag) {
-                if ('element' == $tag) {
+                if ('element' === $tag) {
                     return false;
                 }
             }
@@ -339,7 +339,7 @@ class XMLTransformerTest extends PHPUnit_Framework_TestCase
         $actual = XMLTransformer::transformString(
             $xml,
             function ($tag) {
-                if ('element' == $tag) {
+                if ('element' === $tag) {
                     return array('tag' => false);
                 }
             }
@@ -364,7 +364,7 @@ class XMLTransformerTest extends PHPUnit_Framework_TestCase
         $actual = XMLTransformer::transformString(
             $xml,
             function ($tag) {
-                if ('empty' == $tag) {
+                if ('empty' === $tag) {
                     return false;
                 }
             }
@@ -395,9 +395,7 @@ __EXP1__;
         $actual = XMLTransformer::transformString(
             $xml,
             function ($tag) {
-                if ('element' == $tag or
-                    'empty' == $tag
-                ) {
+                if ('element' === $tag || 'empty' === $tag) {
                     return array(
                         '@attr' => 'value',
                     );
@@ -432,7 +430,7 @@ __EXP1__;
         $actual = XMLTransformer::transformString(
             $xml,
             function ($tag) {
-                if ('empty' != $tag) {
+                if ('empty' !== $tag) {
                     return array(
                         '@a' => '@newname',
                     );
@@ -462,7 +460,7 @@ __EXP__;
         $actual = XMLTransformer::transformString(
             $xml,
             function ($tag) {
-                if ('element' == $tag) {
+                if ('element' === $tag) {
                     return array(
                         '@a'     => '@xyz',
                         '@xml:a' => '@c',
@@ -481,7 +479,7 @@ __EXP__;
         $actual = XMLTransformer::transformString(
             $xml,
             function ($tag) {
-                if ('element' == $tag) {
+                if ('element' === $tag) {
                     return array(
                         '@xml:a' => 'Literal',
                     );
@@ -499,7 +497,7 @@ __EXP__;
         $actual = XMLTransformer::transformString(
             $xml,
             function ($tag) {
-                if ('element' == $tag) {
+                if ('element' === $tag) {
                     return array(
                         '@xml:a' => false,
                     );
@@ -517,7 +515,7 @@ __EXP__;
         $actual = XMLTransformer::transformString(
             $xml,
             function ($tag) {
-                if ('element' == $tag) {
+                if ('element' === $tag) {
                     return array(
                         '@a'     => '@xml:id',
                         '@xml:a' => '@rs',
@@ -616,7 +614,7 @@ __EXP1__;
         $actual = XMLTransformer::transformString(
             $xml,
             function ($tag) {
-                if ('element' == $tag) {
+                if ('element' === $tag) {
                     return array(
                         'insbefore' => 'Content outside',
                     );
@@ -646,7 +644,7 @@ __EXP1__;
         $actual = XMLTransformer::transformString(
             $xml,
             function ($tag) {
-                if ('element' == $tag) {
+                if ('element' === $tag) {
                     return array(
                         'insstart' => 'Static content + ',
                     );
@@ -676,7 +674,7 @@ __EXP1__;
         $actual = XMLTransformer::transformString(
             $xml,
             function ($tag) {
-                if ('element' == $tag) {
+                if ('element' === $tag) {
                     return array(
                         'insend' => ' + Static content',
                     );
@@ -706,7 +704,7 @@ __EXP1__;
         $actual = XMLTransformer::transformString(
             $xml,
             function ($tag) {
-                if ('element' == $tag) {
+                if ('element' === $tag) {
                     return array(
                         'insafter' => 'Stuff behind',
                     );
@@ -728,7 +726,7 @@ __EXP1__;
         $actual = XMLTransformer::transformString(
             $xml,
             function ($tag) {
-                if ('empty' == $tag) {
+                if ('empty' === $tag) {
                     return array(
                         'insafter' => 'Content',
                     );
@@ -749,7 +747,7 @@ __EXP1__;
         $actual = XMLTransformer::transformString(
             $xml,
             function ($tag) {
-                if ('empty' == $tag) {
+                if ('empty' === $tag) {
                     return array(
                         'tag'       => false,
                         'insbefore' => 'Stuff before',
@@ -837,7 +835,7 @@ __EXP1__;
         $actual = XMLTransformer::transformString(
             $xml,
             function ($tag) {
-                if ('element' == $tag) {
+                if ('element' === $tag) {
                     return array(
                         'transformOuter' => function ($str) {
                             if ('<element>Element <tag>content</tag></element>' !== $str) {
@@ -862,7 +860,7 @@ __EXP1__;
         $actual = XMLTransformer::transformString(
             $xml,
             function ($tag) {
-                if ('element' == $tag) {
+                if ('element' === $tag) {
                     return array(
                         'transformOuter' => function ($str) {
                             return '<foo />';
@@ -884,14 +882,14 @@ __EXP1__;
         $actual = XMLTransformer::transformString(
             $xml,
             function ($tag) {
-                if ('element' == $tag) {
+                if ('element' === $tag) {
                     return array(
                         'transformOuter' => function ($str) {
                             return strip_tags(str_replace('Foobar', 'Hello', $str));
                         },
                     );
                 }
-                if ('tag' == $tag) {
+                if ('tag' === $tag) {
                     return array(
                         'transformOuter' => function () {
                             return 'World';
@@ -914,7 +912,7 @@ __EXP1__;
         $actual = XMLTransformer::transformString(
             $xml,
             function ($tag) {
-                if ('element' == $tag) {
+                if ('element' === $tag) {
                     return array(
                         'transformInner' => function ($str) {
                             if ('Element <tag>content</tag>' !== $str) {
@@ -939,9 +937,9 @@ __EXP1__;
         $actual = XMLTransformer::transformString(
             $xml,
             function ($tag) {
-                if ('element' == $tag) {
+                if ('element' === $tag) {
                     return array(
-                        'transformInner' => function ($str) {
+                        'transformInner' => function () {
                             return 'Foo';
                         },
                     );
@@ -971,7 +969,7 @@ __XML2__;
         $actual = XMLTransformer::transformString(
             $xml,
             function ($tag) {
-                if ('ignore' == $tag) {
+                if ('ignore' === $tag) {
                     return false;
                 }
 
@@ -1062,7 +1060,7 @@ class TestObject
      *
      * @return array
      */
-    static function transform($tag)
+    public static function transform($tag)
     {
         return array(
             'tag'      => false,
