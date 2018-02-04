@@ -56,16 +56,12 @@ class XMLTransformerTest extends TestCase
      */
     public function invokingTheTransformerWithAValidCallbackFunctionWorksWhenArgumentsAreReferences()
     {
-        if (version_compare(PHP_VERSION, '5.4') < 0) {
-            $this->markTestSkipped('Test not applicable when on PHP 5.3');
-        } else {
-            $actual = XMLTransformer::transformString(
-                '<xml foo="bar"></xml>',
-                __NAMESPACE__.'\valid_function_by_ref'
-            );
+        $actual = XMLTransformer::transformString(
+            '<xml foo="bar"></xml>',
+            __NAMESPACE__.'\valid_function_by_ref'
+        );
 
-            static::assertSame('<xml></xml>', $actual);
-        }
+        static::assertSame('<xml></xml>', $actual);
     }
 
     /**

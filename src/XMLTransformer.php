@@ -55,7 +55,7 @@ class XMLTransformer
      *
      * @var array
      */
-    protected $stack = array();
+    protected $stack = [];
 
     /**
      * Stack for keeping track of whether there's a transformer for the current
@@ -64,7 +64,7 @@ class XMLTransformer
      *
      * @var array Indexed array
      */
-    protected $transformMe = array();
+    protected $transformMe = [];
 
     /**
      * Stack for managing content transformation. Each item is an indexed array
@@ -75,7 +75,7 @@ class XMLTransformer
      *
      * @var array Indexed array
      */
-    protected $transformerStack = array();
+    protected $transformerStack = [];
 
     /**
      * Holds the resulting XML
@@ -87,11 +87,6 @@ class XMLTransformer
     /**
      * @var bool
      */
-    private $preFiveFour;
-
-    /**
-     * @var bool
-     */
     private $keepCData;
 
     /**
@@ -99,7 +94,6 @@ class XMLTransformer
      */
     private function __construct()
     {
-        $this->preFiveFour = version_compare(PHP_VERSION, '5.4') < 0;
     }
 
     /**
@@ -137,7 +131,7 @@ class XMLTransformer
      *                                         is not retained as CDATA, but as PCDATA
      *                                         with < and > and & escaped
      *
-     * @return string XML string
+     * @return mixed Transformation result
      * @throws \InvalidArgumentException
      * @throws \RuntimeException
      */
@@ -180,6 +174,7 @@ class XMLTransformer
         }
 
         $r->close();
+
         return $xmltr->content;
     }
 
@@ -211,23 +206,19 @@ class XMLTransformer
 
         $name = $reader->prefix ? $reader->prefix.':'.$reader->localName : $reader->localName;
 
-        if ($this->preFiveFour) {
-            $rules = call_user_func_array(
-                $this->callback,
-                array($name, $attributes, $type)
-            );
-        } else {
-            $callback = $this->callback; // Workaround for being able to pass args by ref
-            $rules    = $callback($name, $attributes, $type);
-        }
+        $callback = $this->callback; // Workaround for being able to pass args by ref
+        $rules    = $callback($name, $attributes, $type);
 
         if (false === $rules) {
             if (!$reader->isEmptyElement) {
                 $this->insideIgnorableTag ++;
             }
+
             return; // Nothing to do
-        } elseif (null === $rules) {
-            $rules = array();
+        }
+
+        if (null === $rules) {
+            $rules = [];
         } else {
             $this->checkRules($reader, $name, $rules);
         }
@@ -254,7 +245,7 @@ class XMLTransformer
             $this->updateTransformationStack($rules, $insertOutside.$tag);
         }
 
-        if (0 < $count = count($this->transformerStack)) {
+        if (0 < $count = \count($this->transformerStack)) {
             // Add to stack of content to be transformed
             $this->transformerStack[$count - 1][1] .= $insertOutside.$tag.$insertInside;
         } else {
@@ -335,20 +326,15 @@ class XMLTransformer
 
         $name = $reader->prefix ? $reader->prefix.':'.$reader->localName : $reader->localName;
 
-        if ($this->preFiveFour) {
-            $rules = call_user_func_array(
-                $this->callback,
-                array($name, $attributes, self::ELCLOSE)
-            );
-        } else {
-            $callback = $this->callback; // Workaround for being able to pass args by ref
-            $rules    = $callback($name, $attributes, self::ELCLOSE);
-        }
+        $callback = $this->callback; // Workaround for being able to pass args by ref
+        $rules    = $callback($name, $attributes, self::ELCLOSE);
 
         if (false === $rules) {
             return;
-        } elseif (null === $rules) {
-            $rules = array();
+        }
+
+        if (null === $rules) {
+            $rules = [];
         }
 
         $tag           = array_key_exists('tag', $rules) ? $rules['tag'] : $name;
@@ -380,7 +366,7 @@ class XMLTransformer
             $content = $insertInside.$tag.$insertOutside;
         }
 
-        if (0 < $count = count($this->transformerStack)) {
+        if (0 < $count = \count($this->transformerStack)) {
             // Add $content to stack of content to be transformed
             $this->transformerStack[$count - 1][1] .= $content;
         } else {
@@ -399,7 +385,7 @@ class XMLTransformer
             return;
         }
 
-        if (0 < $count = count($this->transformerStack)) {
+        if (0 < $count = \count($this->transformerStack)) {
             // Add content to transformation stack
             $this->transformerStack[$count - 1][1] .= $content;
         } else {
@@ -433,23 +419,23 @@ class XMLTransformer
      */
     protected static function checkCallback($callback)
     {
-        if (is_string($callback)) {
+        if (\is_string($callback)) {
             // Function
-            if (!function_exists($callback)) {
+            if (!\function_exists($callback)) {
                 throw new \InvalidArgumentException('Invalid callback function');
             }
             return true;
         }
 
-        if (is_array($callback)) {
+        if (\is_array($callback)) {
             // Method
-            if (2 !== count($callback)) {
+            if (2 !== \count($callback)) {
                 throw new \InvalidArgumentException(
                     'When an array is passed as callback, it must have exactly 2 members'
                 );
             }
             list($class, $method) = $callback;
-            if (!is_callable(array($class, $method))) {
+            if (!\is_callable([$class, $method])) {
                 throw new \InvalidArgumentException('Invalid callback method');
             }
             return true;
@@ -468,10 +454,10 @@ class XMLTransformer
     protected function getAttributes(\XMLReader $reader)
     {
         if (!$reader->hasAttributes) {
-            return array();
+            return [];
         }
 
-        $attributes = array();
+        $attributes = [];
         $reader->moveToFirstAttribute();
 
         do {
@@ -495,12 +481,12 @@ class XMLTransformer
      */
     protected function addAttributes($tag, array $attributes, $rules)
     {
-        static $allowed = array(
+        static $allowed = [
             'insend'         => true,
             'insafter'       => true,
             'transformInner' => true,
             'transformOuter' => true,
-        );
+        ];
 
         foreach ($attributes as $attrname => $value) {
             if (array_key_exists("@$attrname", $rules)) {
@@ -557,17 +543,17 @@ class XMLTransformer
             $rules['transformOuter'] instanceof \Closure
         ) {
             $this->transformMe[]      = true;
-            $this->transformerStack[] = array($rules['transformOuter'], '', false);
+            $this->transformerStack[] = [$rules['transformOuter'], '', false];
         } elseif (isset($rules['transformInner']) &&
                   $rules['transformInner'] instanceof \Closure
         ) {
             $this->transformMe[]      = true;
-            $this->transformerStack[] = array(
+            $this->transformerStack[] = [
                 $rules['transformInner'],
                 '',
                 true,
-                strlen($tagPlusContent)
-            );
+                \strlen($tagPlusContent)
+            ];
         } else {
             $this->transformMe[] = false;
         }
