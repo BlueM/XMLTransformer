@@ -1,8 +1,8 @@
 <?php
 
-require_once __DIR__.'/../lib/BlueM/XMLTransformer.php';
+namespace BlueM;
 
-use BlueM\XMLTransformer;
+use PHPUnit\Framework\TestCase;
 
 /**
  * Tests for XMLTransformer
@@ -11,11 +11,11 @@ use BlueM\XMLTransformer;
  * @author  Carsten Bluem <carsten@bluem.net>
  * @license http://www.opensource.org/licenses/bsd-license.php BSD 2-Clause License
  */
-class XMLTransformerTest extends PHPUnit_Framework_TestCase
+class XMLTransformerTest extends TestCase
 {
     /**
      * @test
-     * @expectedException PHPUnit_Framework_Error_Warning
+     * @expectedException \PHPUnit\Framework\Error\Warning
      */
     public function invokingTheTransformerWithInvalidXmlProducesAnError()
     {
@@ -28,7 +28,7 @@ class XMLTransformerTest extends PHPUnit_Framework_TestCase
 
     /**
      * @test
-     * @expectedException InvalidArgumentException
+     * @expectedException \InvalidArgumentException
      * @expectedExceptionMessage Invalid callback function
      */
     public function invokingTheTransformerWithAnInvalidCallbackFunctionThrowsAnException()
@@ -46,9 +46,9 @@ class XMLTransformerTest extends PHPUnit_Framework_TestCase
     {
         $actual = XMLTransformer::transformString(
             '<xml></xml>',
-            'valid_function'
+            __NAMESPACE__.'\valid_function'
         );
-        $this->assertSame('Callback function was called for <xml>', $actual);
+        static::assertSame('Callback function was called for <xml>', $actual);
     }
 
     /**
@@ -61,36 +61,36 @@ class XMLTransformerTest extends PHPUnit_Framework_TestCase
         } else {
             $actual = XMLTransformer::transformString(
                 '<xml foo="bar"></xml>',
-                'valid_function_by_ref'
+                __NAMESPACE__.'\valid_function_by_ref'
             );
 
-            $this->assertSame('<xml></xml>', $actual);
+            static::assertSame('<xml></xml>', $actual);
         }
     }
 
     /**
      * @test
-     * @expectedException InvalidArgumentException
+     * @expectedException \InvalidArgumentException
      * @expectedExceptionMessage it must have exactly 2
      */
     public function invokingTheTransformerWithAnUnusableMethodArrayThrowsAnException()
     {
         XMLTransformer::transformString(
             '<xml></xml>',
-            array('stdClass')
+            ['stdClass']
         );
     }
 
     /**
      * @test
-     * @expectedException InvalidArgumentException
+     * @expectedException \InvalidArgumentException
      * @expectedExceptionMessage Invalid callback method
      */
     public function invokingTheTransformerWithAnInvalidArrayThrowsAnException()
     {
         XMLTransformer::transformString(
             '<xml></xml>',
-            array('TestObject', 'unaccessible')
+            [__NAMESPACE__.'TestObject', 'unaccessible']
         );
     }
 
@@ -101,24 +101,24 @@ class XMLTransformerTest extends PHPUnit_Framework_TestCase
     {
         $actual = XMLTransformer::transformString(
             '<xml></xml>',
-            array('TestObject', 'transform')
+            [__NAMESPACE__.'\TestObject', 'transform']
         );
-        $this->assertSame('Callback method was called for <xml>', $actual);
+        static::assertSame('Callback method was called for <xml>', $actual);
     }
 
     /**
      * @test
-     * @expectedException InvalidArgumentException
+     * @expectedException \InvalidArgumentException
      * @expectedExceptionMessage Callback must be function, method or closure
      */
     public function invokingTheTransformerWithCrapAsCallbackThrowsAnException()
     {
-        XMLTransformer::transformString('<xml></xml>', new stdClass);
+        XMLTransformer::transformString('<xml></xml>', new class {});
     }
 
     /**
      * @test
-     * @expectedException UnexpectedValueException
+     * @expectedException \UnexpectedValueException
      * @expectedExceptionMessage Unexpected key “unexpected” in array returned
      */
     public function returningAnUnexpectedArrayKeyThrowsAnException()
@@ -126,9 +126,9 @@ class XMLTransformerTest extends PHPUnit_Framework_TestCase
         XMLTransformer::transformString(
             '<root></root>',
             function () {
-                return array(
+                return [
                     'unexpected' => 'value',
-                );
+                ];
             }
         );
     }
@@ -147,11 +147,11 @@ class XMLTransformerTest extends PHPUnit_Framework_TestCase
         $actual = XMLTransformer::transformString(
             $xml,
             function () {
-                return array();
+                return [];
             }
         );
 
-        $this->assertSame($xml, $actual);
+        static::assertSame($xml, $actual);
     }
 
     /**
@@ -174,12 +174,12 @@ class XMLTransformerTest extends PHPUnit_Framework_TestCase
         $actual = XMLTransformer::transformString(
             $xml,
             function () {
-                return array();
+                return [];
             },
             false
         );
 
-        $this->assertSame($exp, $actual);
+        static::assertSame($exp, $actual);
     }
 
     /**
@@ -197,7 +197,7 @@ class XMLTransformerTest extends PHPUnit_Framework_TestCase
             function ($tag, $attributes, $opening) {
             }
         );
-        $this->assertSame($xml, $actual);
+        static::assertSame($xml, $actual);
 
         $actual = XMLTransformer::transformString(
             $xml,
@@ -205,7 +205,7 @@ class XMLTransformerTest extends PHPUnit_Framework_TestCase
                 return null;
             }
         );
-        $this->assertSame($xml, $actual);
+        static::assertSame($xml, $actual);
     }
 
     /**
@@ -231,7 +231,7 @@ class XMLTransformerTest extends PHPUnit_Framework_TestCase
                "<empty />\n".
                '</root>';
 
-        $this->assertSame($exp, $actual);
+        static::assertSame($exp, $actual);
     }
 
     /**
@@ -248,7 +248,7 @@ class XMLTransformerTest extends PHPUnit_Framework_TestCase
             $xml,
             function ($tag) {
                 if ('element' === $tag) {
-                    return array('tag' => false);
+                    return ['tag' => false];
                 }
             }
         );
@@ -258,7 +258,7 @@ class XMLTransformerTest extends PHPUnit_Framework_TestCase
                "<empty />\n".
                '</root>';
 
-        $this->assertSame($exp, $actual);
+        static::assertSame($exp, $actual);
     }
 
     /**
@@ -280,16 +280,16 @@ class XMLTransformerTest extends PHPUnit_Framework_TestCase
             $xml,
             function ($tag) {
                 if ('root' === $tag) {
-                    return array('tag' => 'toplevel');
+                    return ['tag' => 'toplevel'];
                 }
                 if ('element' === $tag) {
-                    return array('tag' => 'a');
+                    return ['tag' => 'a'];
                 }
-                return array('tag' => 'b');
+                return ['tag' => 'b'];
             }
         );
 
-        $this->assertSame($exp, $actual);
+        static::assertSame($exp, $actual);
     }
 
     /**
@@ -315,12 +315,12 @@ class XMLTransformerTest extends PHPUnit_Framework_TestCase
             $xml,
             function ($tag) {
                 if ('rng:foo' === $tag) {
-                    return array('tag' => 'test');
+                    return ['tag' => 'test'];
                 }
             }
         );
 
-        $this->assertSame($exp, $actual);
+        static::assertSame($exp, $actual);
     }
 
     /**
@@ -347,7 +347,7 @@ class XMLTransformerTest extends PHPUnit_Framework_TestCase
             }
         );
 
-        $this->assertSame($exp, $actual);
+        static::assertSame($exp, $actual);
     }
 
     /**
@@ -371,12 +371,12 @@ class XMLTransformerTest extends PHPUnit_Framework_TestCase
             $xml,
             function ($tag) {
                 if ('element1' === $tag || 'element2' === $tag) {
-                    return array('tag' => false);
+                    return ['tag' => false];
                 }
             }
         );
 
-        $this->assertSame($exp, $actual);
+        static::assertSame($exp, $actual);
     }
 
     /**
@@ -401,7 +401,7 @@ class XMLTransformerTest extends PHPUnit_Framework_TestCase
             }
         );
 
-        $this->assertSame($exp, $actual);
+        static::assertSame($exp, $actual);
     }
 
     /**
@@ -427,16 +427,16 @@ __EXP1__;
             $xml,
             function ($tag) {
                 if ('element' === $tag || 'empty' === $tag) {
-                    return array(
+                    return [
                         '@attr' => 'value',
-                    );
+                    ];
                 }
-                return array(
+                return [
                     '@xml:id' => 'abc"123',
-                );
+                ];
             }
         );
-        $this->assertSame($exp, $actual);
+        static::assertSame($exp, $actual);
     }
 
     /**
@@ -462,13 +462,13 @@ __EXP1__;
             $xml,
             function ($tag) {
                 if ('empty' !== $tag) {
-                    return array(
+                    return [
                         '@a' => '@newname',
-                    );
+                    ];
                 }
             }
         );
-        $this->assertSame($exp, $actual);
+        static::assertSame($exp, $actual);
     }
 
     /**
@@ -492,14 +492,14 @@ __EXP__;
             $xml,
             function ($tag) {
                 if ('element' === $tag) {
-                    return array(
+                    return [
                         '@a'     => '@xyz',
                         '@xml:a' => '@c',
-                    );
+                    ];
                 }
             }
         );
-        $this->assertSame($exp, $actual);
+        static::assertSame($exp, $actual);
 
         $exp = <<<__EXP__
 <TEI xmlns="http://www.tei-c.org/ns/1.0">
@@ -511,13 +511,13 @@ __EXP__;
             $xml,
             function ($tag) {
                 if ('element' === $tag) {
-                    return array(
+                    return [
                         '@xml:a' => 'Literal',
-                    );
+                    ];
                 }
             }
         );
-        $this->assertSame($exp, $actual);
+        static::assertSame($exp, $actual);
 
         $exp = <<<__EXP__
 <TEI xmlns="http://www.tei-c.org/ns/1.0">
@@ -529,13 +529,13 @@ __EXP__;
             $xml,
             function ($tag) {
                 if ('element' === $tag) {
-                    return array(
+                    return [
                         '@xml:a' => false,
-                    );
+                    ];
                 }
             }
         );
-        $this->assertSame($exp, $actual);
+        static::assertSame($exp, $actual);
 
         $exp = <<<__EXP__
 <TEI xmlns="http://www.tei-c.org/ns/1.0">
@@ -547,14 +547,14 @@ __EXP__;
             $xml,
             function ($tag) {
                 if ('element' === $tag) {
-                    return array(
+                    return [
                         '@a'     => '@xml:id',
                         '@xml:a' => '@rs',
-                    );
+                    ];
                 }
             }
         );
-        $this->assertSame($exp, $actual);
+        static::assertSame($exp, $actual);
     }
 
     /**
@@ -568,14 +568,14 @@ __EXP__;
         $actual = XMLTransformer::transformString(
             $xml,
             function () {
-                return array(
+                return [
                     '@c'      => 'Literal',
                     '@a'      => 'Contains < > &',
                     '@xml:id' => 'bar',
-                );
+                ];
             }
         );
-        $this->assertSame($exp, $actual);
+        static::assertSame($exp, $actual);
     }
 
     /**
@@ -589,12 +589,12 @@ __EXP__;
         $actual = XMLTransformer::transformString(
             $xml,
             function () {
-                return array(
+                return [
                     '@a' => false,
-                );
+                ];
             }
         );
-        $this->assertSame($exp, $actual);
+        static::assertSame($exp, $actual);
     }
 
     /**
@@ -617,12 +617,12 @@ __EXP1__;
         $actual = XMLTransformer::transformString(
             $xml,
             function () {
-                return array(
+                return [
                     '@c' => '@d',
-                );
+                ];
             }
         );
-        $this->assertSame($exp, $actual);
+        static::assertSame($exp, $actual);
     }
 
     /**
@@ -646,13 +646,13 @@ __EXP1__;
             $xml,
             function ($tag) {
                 if ('element' === $tag) {
-                    return array(
+                    return [
                         'insbefore' => 'Content outside',
-                    );
+                    ];
                 }
             }
         );
-        $this->assertSame($exp, $actual);
+        static::assertSame($exp, $actual);
     }
 
     /**
@@ -676,13 +676,13 @@ __EXP1__;
             $xml,
             function ($tag) {
                 if ('element' === $tag) {
-                    return array(
+                    return [
                         'insstart' => 'Static content + ',
-                    );
+                    ];
                 }
             }
         );
-        $this->assertSame($exp, $actual);
+        static::assertSame($exp, $actual);
     }
 
     /**
@@ -706,13 +706,13 @@ __EXP1__;
             $xml,
             function ($tag) {
                 if ('element' === $tag) {
-                    return array(
+                    return [
                         'insend' => ' + Static content',
-                    );
+                    ];
                 }
             }
         );
-        $this->assertSame($exp, $actual);
+        static::assertSame($exp, $actual);
     }
 
     /**
@@ -736,13 +736,13 @@ __EXP1__;
             $xml,
             function ($tag) {
                 if ('element' === $tag) {
-                    return array(
+                    return [
                         'insafter' => 'Stuff behind',
-                    );
+                    ];
                 }
             }
         );
-        $this->assertSame($exp, $actual);
+        static::assertSame($exp, $actual);
     }
 
     /**
@@ -758,13 +758,13 @@ __EXP1__;
             $xml,
             function ($tag) {
                 if ('empty' === $tag) {
-                    return array(
+                    return [
                         'insafter' => 'Content',
-                    );
+                    ];
                 }
             }
         );
-        $this->assertSame($exp, $actual);
+        static::assertSame($exp, $actual);
     }
 
     /**
@@ -779,14 +779,14 @@ __EXP1__;
             $xml,
             function ($tag) {
                 if ('empty' === $tag) {
-                    return array(
+                    return [
                         'tag'       => false,
                         'insbefore' => 'Stuff before',
-                    );
+                    ];
                 }
             }
         );
-        $this->assertSame($exp, $actual);
+        static::assertSame($exp, $actual);
     }
 
     /**
@@ -799,25 +799,25 @@ __EXP1__;
         $actual = XMLTransformer::transformString(
             $xml,
             function ($tag, $attributes, $type) {
-                if ($type === BlueM\XMLTransformer::ELOPEN) {
-                    return array(
+                if ($type === XMLTransformer::ELOPEN) {
+                    return [
                         'tag'      => false,
                         'insstart' => "<$tag>"
-                    );
-                } elseif ($type === BlueM\XMLTransformer::ELCLOSE) {
-                    return array(
+                    ];
+                } elseif ($type === XMLTransformer::ELCLOSE) {
+                    return [
                         'tag'    => false,
                         'insend' => "</$tag>"
-                    );
+                    ];
                 } else {
-                    return array(
+                    return [
                         'tag'       => false,
                         'insbefore' => "<$tag/>"
-                    );
+                    ];
                 }
             }
         );
-        $this->assertSame($xml, $actual);
+        static::assertSame($xml, $actual);
     }
 
     /**
@@ -830,10 +830,10 @@ __EXP1__;
         XMLTransformer::transformString(
             '<root><empty /></root>',
             function () {
-                return array(
+                return [
                     'tag'      => false,
                     'insstart' => 'String',
-                );
+                ];
             }
         );
     }
@@ -848,10 +848,10 @@ __EXP1__;
         XMLTransformer::transformString(
             '<root><empty /></root>',
             function () {
-                return array(
+                return [
                     'tag'    => false,
                     'insend' => 'String',
-                );
+                ];
             }
         );
     }
@@ -867,18 +867,18 @@ __EXP1__;
             $xml,
             function ($tag) {
                 if ('element' === $tag) {
-                    return array(
+                    return [
                         'transformOuter' => function ($str) {
                             if ('<element>Element <tag>content</tag></element>' !== $str) {
                                 throw new \UnexpectedValueException('Wrong element content');
                             }
                             return $str;
                         },
-                    );
+                    ];
                 }
             }
         );
-        $this->assertSame($xml, $actual);
+        static::assertSame($xml, $actual);
     }
 
     /**
@@ -892,15 +892,15 @@ __EXP1__;
             $xml,
             function ($tag) {
                 if ('element' === $tag) {
-                    return array(
+                    return [
                         'transformOuter' => function ($str) {
                             return '<foo />';
                         },
-                    );
+                    ];
                 }
             }
         );
-        $this->assertSame('<root><foo /><c /></root>', $actual);
+        static::assertSame('<root><foo /><c /></root>', $actual);
     }
 
     /**
@@ -914,23 +914,23 @@ __EXP1__;
             $xml,
             function ($tag) {
                 if ('element' === $tag) {
-                    return array(
+                    return [
                         'transformOuter' => function ($str) {
                             return strip_tags(str_replace('Foobar', 'Hello', $str));
                         },
-                    );
+                    ];
                 }
                 if ('tag' === $tag) {
-                    return array(
+                    return [
                         'transformOuter' => function () {
                             return 'World';
                         },
-                    );
+                    ];
                 }
-                return array('tag' => false);
+                return ['tag' => false];
             }
         );
-        $this->assertSame('Hello World', $actual);
+        static::assertSame('Hello World', $actual);
     }
 
     /**
@@ -944,18 +944,18 @@ __EXP1__;
             $xml,
             function ($tag) {
                 if ('element' === $tag) {
-                    return array(
+                    return [
                         'transformInner' => function ($str) {
                             if ('Element <tag>content</tag>' !== $str) {
                                 throw new \UnexpectedValueException('Wrong element content');
                             }
                             return $str;
                         },
-                    );
+                    ];
                 }
             }
         );
-        $this->assertSame($xml, $actual);
+        static::assertSame($xml, $actual);
     }
 
     /**
@@ -969,15 +969,15 @@ __EXP1__;
             $xml,
             function ($tag) {
                 if ('element' === $tag) {
-                    return array(
+                    return [
                         'transformInner' => function () {
                             return 'Foo';
                         },
-                    );
+                    ];
                 }
             }
         );
-        $this->assertSame('<root><element a="b">Foo</element><c /></root>', $actual);
+        static::assertSame('<root><element a="b">Foo</element><c /></root>', $actual);
     }
 
     /**
@@ -1006,7 +1006,7 @@ __XML2__;
 
             }
         );
-        $this->assertSame($expected, $actual);
+        static::assertSame($expected, $actual);
     }
 
     /**
@@ -1022,7 +1022,7 @@ __XML2__;
                 // No modification
             }
         );
-        $this->assertSame($expected, $actual);
+        static::assertSame($expected, $actual);
     }
 
     /**
@@ -1047,7 +1047,7 @@ __XML1__;
             }
         );
 
-        $this->assertSame('', trim($actual));
+        static::assertSame('', trim($actual));
     }
 
     /**
@@ -1070,7 +1070,7 @@ __XML1__;
             }
         );
 
-        $this->assertSame('<root><a>Works as expected</a></root>', $actual);
+        static::assertSame('<root><a>Works as expected</a></root>', $actual);
     }
 }
 
@@ -1093,10 +1093,10 @@ class TestObject
      */
     public static function transform($tag)
     {
-        return array(
+        return [
             'tag'      => false,
             'insstart' => "Callback method was called for <$tag>",
-        );
+        ];
     }
 }
 
@@ -1109,10 +1109,10 @@ class TestObject
  */
 function valid_function($tag)
 {
-    return array(
+    return [
         'tag'      => false,
         'insstart' => "Callback function was called for <$tag>",
-    );
+    ];
 }
 
 /**
@@ -1124,6 +1124,6 @@ function valid_function($tag)
  */
 function valid_function_by_ref($tag, &$attributes)
 {
-    $attributes = array();
+    $attributes = [];
     return null;
 }
