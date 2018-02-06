@@ -34,6 +34,11 @@ class XMLTransformer
     const ELEMPTY = 2;
     const ELCLOSE = 0;
 
+    const RULE_INSEND = 'insend';
+    const RULE_INSAFTER = 'insafter';
+    const RULE_TRANSFORMINNER = 'transformInner';
+    const RULE_TRANSFORMOUTER = 'transformOuter';
+
     /**
      * Keeps track of whether we are currently in a part of the XML tree that's
      * enclosed by a tag which should be ignored.
@@ -135,7 +140,7 @@ class XMLTransformer
      * @throws \InvalidArgumentException
      * @throws \RuntimeException
      */
-    public static function transformString($xml, $callback, $keepCData = true)
+    public static function transformString(string $xml, callable $callback, bool $keepCData = true)
     {
         $xmltr = new static;
 
@@ -146,7 +151,7 @@ class XMLTransformer
         }
 
         $xmltr->callback  = $callback;
-        $xmltr->keepCData = (bool) $keepCData;
+        $xmltr->keepCData = $keepCData;
 
         $r = new \XMLReader;
         $r->XML($xml);
@@ -240,7 +245,7 @@ class XMLTransformer
         $tag = $this->getTag($name, $attributes, $rules, $reader->isEmptyElement);
 
         if ($reader->isEmptyElement) {
-            $insertInside = isset($rules['insafter']) ? $rules['insafter'] : '';
+            $insertInside = $rules['insafter'] ?? '';
         } else {
             $this->updateTransformationStack($rules, $insertOutside.$tag);
         }
@@ -264,9 +269,9 @@ class XMLTransformer
      *
      * @throws \UnexpectedValueException
      */
-    protected function getTag($name, array $attributes, array &$rules, $empty)
+    protected function getTag($name, array $attributes, array &$rules, bool $empty): string
     {
-        $tag = isset($rules['tag']) ? $rules['tag'] : $name;
+        $tag = $rules['tag'] ?? $name;
         unset($rules['tag']);
 
         if ($tag) {
@@ -274,6 +279,7 @@ class XMLTransformer
             if ($empty) {
                 $tag = str_replace('>', ' />', $tag);
             }
+
             return $tag;
         }
 
@@ -287,7 +293,7 @@ class XMLTransformer
      *
      * @throws \RuntimeException
      */
-    protected function checkRules(\XMLReader $reader, $name, array $rules)
+    protected function checkRules(\XMLReader $reader, string $name, array $rules)
     {
         if ($reader->isEmptyElement) {
             if (!empty($rules['insend'])) {
@@ -451,7 +457,7 @@ class XMLTransformer
      *
      * @return array
      */
-    protected function getAttributes(\XMLReader $reader)
+    protected function getAttributes(\XMLReader $reader): array
     {
         if (!$reader->hasAttributes) {
             return [];
@@ -472,20 +478,20 @@ class XMLTransformer
     /**
      * Adds attributes to the given tag and returns the resulting opening tag.
      *
-     * @param string $tag        Tag/element name.
+     * @param string $tag        Tag/element name
      * @param array  $attributes Associative array of attributes
-     * @param mixed  $rules      Processing rules
+     * @param array  $rules      Processing rules
      *
      * @return string
      * @throws \UnexpectedValueException
      */
-    protected function addAttributes($tag, array $attributes, $rules)
+    protected function addAttributes(string $tag, array $attributes, array $rules): string
     {
         static $allowed = [
-            'insend'         => true,
-            'insafter'       => true,
-            'transformInner' => true,
-            'transformOuter' => true,
+            self::RULE_INSEND         => true,
+            self::RULE_INSAFTER       => true,
+            self::RULE_TRANSFORMINNER => true,
+            self::RULE_TRANSFORMOUTER => true,
         ];
 
         foreach ($attributes as $attrname => $value) {
@@ -493,7 +499,7 @@ class XMLTransformer
                 // There's a rule for this attribute
                 if (false === $rules["@$attrname"]) {
                     // Skip this attribute
-                } elseif (strncmp($rules["@$attrname"], '@', 1)) {
+                } elseif (0 !== strpos($rules["@$attrname"], '@')) {
                     // Returned value does not start with "@" >> Treat as value
                     $tag .= sprintf(' %s="%s"', $attrname, htmlspecialchars($rules["@$attrname"]));
                 } else {
@@ -507,13 +513,11 @@ class XMLTransformer
             }
         }
 
-        // Loop over remaining keys in $attr (i.e.: attributes added
-        // in the callback method)
+        // Loop over remaining keys in $attr (i.e.: attributes added in the callback method)
         foreach ($rules as $attrname => $value) {
-            if ('@' === substr($attrname, 0, 1)) {
-                if ('@' === substr($value, 0, 1)) {
-                    // Attribute should be renamed, but attribute was not
-                    // present in source tag >> nothing to rename >> ignore.
+            if (0 === strpos($attrname, '@')) {
+                if (0 === strpos($value, '@')) {
+                    // Attribute should be renamed, but was not present in source tag >> ignore
                 } elseif ($value !== false) {
                     // Add literal value
                     $tag .= sprintf(
@@ -529,6 +533,7 @@ class XMLTransformer
                 );
             }
         }
+
         return "<$tag>";
     }
 
