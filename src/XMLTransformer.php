@@ -222,9 +222,8 @@ class XMLTransformer
         $name = $reader->prefix ? $reader->prefix.':'.$reader->localName : $reader->localName;
 
         $callback = $this->callback; // Workaround for being able to pass args by ref
-        $rules    = $callback($name, $attributes, $type);
 
-        if (false === $rules) {
+        if (false === $rules = $callback($name, $attributes, $type)) {
             if (!$reader->isEmptyElement) {
                 $this->insideIgnorableTag ++;
             }
@@ -238,19 +237,9 @@ class XMLTransformer
             $this->checkRules($reader, $name, $rules);
         }
 
-        if (isset($rules[self::RULE_ADD_BEFORE])) {
-            $insertOutside = $rules[self::RULE_ADD_BEFORE];
-            unset($rules[self::RULE_ADD_BEFORE]);
-        } else {
-            $insertOutside = '';
-        }
-
-        if (isset($rules[self::RULE_ADD_START])) {
-            $insertInside = $rules[self::RULE_ADD_START];
-            unset($rules[self::RULE_ADD_START]);
-        } else {
-            $insertInside = '';
-        }
+        $insertOutside = $rules[self::RULE_ADD_BEFORE] ?? '';
+        $insertInside = $rules[self::RULE_ADD_START] ?? '';
+        unset($rules[self::RULE_ADD_BEFORE], $rules[self::RULE_ADD_START]);
 
         $tag = $this->getTag($name, $attributes, $rules, $reader->isEmptyElement);
 
@@ -347,9 +336,8 @@ class XMLTransformer
         $name = $reader->prefix ? $reader->prefix.':'.$reader->localName : $reader->localName;
 
         $callback = $this->callback; // Workaround for being able to pass args by ref
-        $rules    = $callback($name, $attributes, self::ELCLOSE);
 
-        if (false === $rules) {
+        if (false === $rules = $callback($name, $attributes, self::ELCLOSE)) {
             return;
         }
 
@@ -358,8 +346,8 @@ class XMLTransformer
         }
 
         $tag           = array_key_exists(self::RULE_TAG, $rules) ? $rules[self::RULE_TAG] : $name;
-        $insertInside  = isset($rules[static::RULE_ADD_END]) ? $rules[static::RULE_ADD_END] : '';
-        $insertOutside = isset($rules[static::RULE_ADD_AFTER]) ? $rules[static::RULE_ADD_AFTER] : '';
+        $insertInside  = $rules[static::RULE_ADD_END] ?? '';
+        $insertOutside = $rules[static::RULE_ADD_AFTER] ?? '';
 
         if ($tag) {
             $tag = "</$tag>";
@@ -523,9 +511,9 @@ class XMLTransformer
         // Loop over remaining keys in $attr (i.e.: attributes added in the callback method)
         foreach ($rules as $attrname => $value) {
             if (0 === strpos($attrname, '@')) {
-                if (0 === strpos($value, '@')) {
-                    // Attribute should be renamed, but was not present in source tag >> ignore
-                } elseif ($value !== false) {
+                if ($value !== false &&
+                    0 !== strpos($value, '@')
+                ) {
                     // Add literal value
                     $tag .= sprintf(
                         ' %s="%s"',
@@ -535,8 +523,7 @@ class XMLTransformer
                 }
             } elseif (empty(self::ALLOWED_ATTRIBUTE_RULES[$attrname])) {
                 throw new \UnexpectedValueException(
-                    'Unexpected key “'.$attrname.'” in array returned by '.
-                    "callback function for <$tag>."
+                    'Unexpected key “'.$attrname."” in array returned by callback function for <$tag>."
                 );
             }
         }
