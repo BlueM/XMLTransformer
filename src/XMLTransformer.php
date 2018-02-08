@@ -34,10 +34,20 @@ class XMLTransformer
     const ELEMPTY = 2;
     const ELCLOSE = 0;
 
-    const RULE_INSEND = 'insend';
-    const RULE_INSAFTER = 'insafter';
-    const RULE_TRANSFORMINNER = 'transformInner';
-    const RULE_TRANSFORMOUTER = 'transformOuter';
+    const RULE_ADD_END = 'insend';
+    const RULE_ADD_AFTER = 'insafter';
+    const RULE_ADD_BEFORE = 'insbefore';
+    const RULE_ADD_START = 'insstart';
+    const RULE_TRANSFORM_INNER = 'transformInner';
+    const RULE_TRANSFORM_OUTER = 'transformOuter';
+    const RULE_TAG = 'tag';
+
+    const ALLOWED_ATTRIBUTE_RULES = [
+        self::RULE_ADD_END         => true,
+        self::RULE_ADD_AFTER       => true,
+        self::RULE_TRANSFORM_INNER => true,
+        self::RULE_TRANSFORM_OUTER => true,
+    ];
 
     /**
      * Keeps track of whether we are currently in a part of the XML tree that's
@@ -228,16 +238,16 @@ class XMLTransformer
             $this->checkRules($reader, $name, $rules);
         }
 
-        if (isset($rules['insbefore'])) {
-            $insertOutside = $rules['insbefore'];
-            unset($rules['insbefore']);
+        if (isset($rules[self::RULE_ADD_BEFORE])) {
+            $insertOutside = $rules[self::RULE_ADD_BEFORE];
+            unset($rules[self::RULE_ADD_BEFORE]);
         } else {
             $insertOutside = '';
         }
 
-        if (isset($rules['insstart'])) {
-            $insertInside = $rules['insstart'];
-            unset($rules['insstart']);
+        if (isset($rules[self::RULE_ADD_START])) {
+            $insertInside = $rules[self::RULE_ADD_START];
+            unset($rules[self::RULE_ADD_START]);
         } else {
             $insertInside = '';
         }
@@ -245,7 +255,7 @@ class XMLTransformer
         $tag = $this->getTag($name, $attributes, $rules, $reader->isEmptyElement);
 
         if ($reader->isEmptyElement) {
-            $insertInside = $rules['insafter'] ?? '';
+            $insertInside = $rules[self::RULE_ADD_AFTER] ?? '';
         } else {
             $this->updateTransformationStack($rules, $insertOutside.$tag);
         }
@@ -271,8 +281,8 @@ class XMLTransformer
      */
     protected function getTag($name, array $attributes, array &$rules, bool $empty): string
     {
-        $tag = $rules['tag'] ?? $name;
-        unset($rules['tag']);
+        $tag = $rules[self::RULE_TAG] ?? $name;
+        unset($rules[self::RULE_TAG]);
 
         if ($tag) {
             $tag = $this->addAttributes($tag, $attributes, $rules);
@@ -296,17 +306,21 @@ class XMLTransformer
     protected function checkRules(\XMLReader $reader, string $name, array $rules)
     {
         if ($reader->isEmptyElement) {
-            if (!empty($rules['insend'])) {
+            if (!empty($rules[self::RULE_ADD_END])) {
                 throw new \RuntimeException(
-                    '“insend” does not make sense for empty tags (here: <'.$name.'/>). '.
-                    'Use “insafter”.'
+                    sprintf(
+                        '“%s” does not make sense for empty tags (here: <%s/>). Use “%s”.',
+                        self::RULE_ADD_END, $name, self::RULE_ADD_AFTER
+                    )
                 );
             }
 
-            if (!empty($rules['insstart'])) {
+            if (!empty($rules[self::RULE_ADD_START])) {
                 throw new \RuntimeException(
-                    '“insstart” does not make sense for empty tags (here: <'.$name.'/>). '.
-                    'Use “insbefore”.'
+                    sprintf(
+                        '“%s” does not make sense for empty tags (here: <%s/>). Use “%s”.',
+                        self::RULE_ADD_START, $name, self::RULE_ADD_BEFORE
+                    )
                 );
             }
         }
@@ -343,9 +357,9 @@ class XMLTransformer
             $rules = [];
         }
 
-        $tag           = array_key_exists('tag', $rules) ? $rules['tag'] : $name;
-        $insertInside  = isset($rules['insend'])   ? $rules['insend']   : '';
-        $insertOutside = isset($rules['insafter']) ? $rules['insafter'] : '';
+        $tag           = array_key_exists(self::RULE_TAG, $rules) ? $rules[self::RULE_TAG] : $name;
+        $insertInside  = isset($rules[static::RULE_ADD_END]) ? $rules[static::RULE_ADD_END] : '';
+        $insertOutside = isset($rules[static::RULE_ADD_AFTER]) ? $rules[static::RULE_ADD_AFTER] : '';
 
         if ($tag) {
             $tag = "</$tag>";
@@ -487,13 +501,6 @@ class XMLTransformer
      */
     protected function addAttributes(string $tag, array $attributes, array $rules): string
     {
-        static $allowed = [
-            self::RULE_INSEND         => true,
-            self::RULE_INSAFTER       => true,
-            self::RULE_TRANSFORMINNER => true,
-            self::RULE_TRANSFORMOUTER => true,
-        ];
-
         foreach ($attributes as $attrname => $value) {
             if (array_key_exists("@$attrname", $rules)) {
                 // There's a rule for this attribute
@@ -526,7 +533,7 @@ class XMLTransformer
                         htmlspecialchars($value)
                     );
                 }
-            } elseif (empty($allowed[$attrname])) {
+            } elseif (empty(self::ALLOWED_ATTRIBUTE_RULES[$attrname])) {
                 throw new \UnexpectedValueException(
                     'Unexpected key “'.$attrname.'” in array returned by '.
                     "callback function for <$tag>."
@@ -544,17 +551,17 @@ class XMLTransformer
      */
     protected function updateTransformationStack(array $rules, $tagPlusContent)
     {
-        if (isset($rules['transformOuter']) &&
-            $rules['transformOuter'] instanceof \Closure
+        if (isset($rules[self::RULE_TRANSFORM_OUTER]) &&
+            $rules[self::RULE_TRANSFORM_OUTER] instanceof \Closure
         ) {
             $this->transformMe[]      = true;
-            $this->transformerStack[] = [$rules['transformOuter'], '', false];
-        } elseif (isset($rules['transformInner']) &&
-                  $rules['transformInner'] instanceof \Closure
+            $this->transformerStack[] = [$rules[self::RULE_TRANSFORM_OUTER], '', false];
+        } elseif (isset($rules[self::RULE_TRANSFORM_INNER]) &&
+                  $rules[self::RULE_TRANSFORM_INNER] instanceof \Closure
         ) {
             $this->transformMe[]      = true;
             $this->transformerStack[] = [
-                $rules['transformInner'],
+                $rules[self::RULE_TRANSFORM_INNER],
                 '',
                 true,
                 \strlen($tagPlusContent)

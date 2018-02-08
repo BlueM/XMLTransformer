@@ -70,13 +70,13 @@ The transformation description array
 
 When you wish to perform a transformation, you must return an associative array. In this case, the following keys can be used:
 
-* “tag”: Returning false for key “tag” removes the tag (incl. its attributes, of course), but keeps any enclosed content. Returning a string will set the tag name to that string.
-* “insbefore”: Will insert the given string before the opening tag
-* “insafter”: Will insert the given string after the closing tag
-* “insstart”: Will insert the given string right after the opening tag
-* “insend”: Will insert the given string right before the closing tag
-* “transformOuter”: Value must be a closure, which will be passed the element itself incl. all its content as a string. The closure’s return value will replace the element.
-* “transformInner”: Value must be a closure, which will be passed the element’s content as a string. The closure’s return value will replace the element.
+* `XMLTransformer::RULE_TAG`: Returning false for key “tag” removes the tag (incl. its attributes, of course), but keeps any enclosed content. Returning a string will set the tag name to that string.
+* `XMLTransformer::RULE_ADD_BEFORE`: Will insert the given string before the opening tag
+* `XMLTransformer::RULE_ADD_AFTER`: Will insert the given string after the closing tag
+* `XMLTransformer::RULE_ADD_START`: Will insert the given string right after the opening tag
+* `XMLTransformer::RULE_ADD_END`: Will insert the given string right before the closing tag
+* `XMLTransformer::RULE_TRANSFORM_OUTER`: Value must be a closure, which will be passed the element itself incl. all its content as a string. The closure’s return value will replace the element.
+* `XMLTransformer::RULE_TRANSFORM_INNER`: Value must be a closure, which will be passed the element’s content as a string. The closure’s return value will replace the element.
 
 Additionally, for handling attributes, array keys in the form of “@<name>” can be used, where <name> is the attribute name (with namespaces, if not from the default namespace). The value of such an array key can be one of:
 * false: The attribute will be removed
@@ -86,12 +86,12 @@ Additionally, for handling attributes, array keys in the form of “@<name>” c
 For instance, this return array …
 
 ```php
-return array(
+return [
 	'tag'      => 'demo',
 	'@xml:id'  => 'id',
 	'@foo'     => false,
-	'insafter' => '!',
-);
+	XMLTransformer::RULE_ADD_AFTER => '!',
+];
 ```
 
 … would mean:
@@ -146,15 +146,15 @@ function transform($tag, $attributes, $opening) {
 		} else {
 			$str = 'Hello world';
 		}
-		return array(
-			'tag'       => false, // <-- Remove the tag, keep content
-			'insbefore' => $str,  // <- Insert literal content
-		);
+		return [
+			XMLTransformer::RULE_TAG => false, // <-- Remove the tag, keep content
+			XMLTransformer::RULE_ADD_BEFORE => $str,  // <- Insert literal content
+		];
 	}
 
 	if ('root' == $tag) {
 		// We do not want the enclosing <root> tags in the output
-		return array('tag'=>false);
+		return [XMLTransformer::RULE_TAG => false];
 	}
 }
 
@@ -201,9 +201,9 @@ Changing attribute values
 echo XMLTransformer::transformString(
 	'<root abc="def"></root>',
 	function($tag, $attributes, $opening) {
-		return array(
+		return [
 			'@abc' => 'xyz'
-		);
+		];
 	}
 );
 // Result: “<root abc="xyz"></root>”
@@ -217,11 +217,11 @@ Adding, renaming and removing attributes
 echo XMLTransformer::transformString(
 	'<root xml:id="abc"><bla xml:id="def" blah="yes"/></root>',
 	function($tag, $attributes, $opening) {
-		return array(
+		return [
 			'@foo'    => 'bar' // Add attribute "foo" with value "bar"
 			'blah'    => false // Remove attribute "blah"
 			'@xml:id' => '@id' // Rename attribute "xml:id" to "id"
-		);
+		];
 	}
 );
 // Result: “<root id="abc"><bla foo="bar" id="def" /></root>”
@@ -288,11 +288,22 @@ Author & License
 This code was written by Carsten Blüm ([www.bluem.net](http://www.bluem.net)) and licensed under the BSD2 license.
 
 
-Changes from earlier versions
-=============================
+Version history
+===============
 
-## From 1.1 to 1.2
+## 2.0 (...)
+* BC break: introduced class constants for transformation rules which should be used instead of the magic strings used with version 1. This means, that in your code, you should …
+    * Change string `insend` to `XMLTransformer::RULE_ADD_END`
+    * Change string `insafter` to `XMLTransformer::RULE_ADD_AFTER`
+    * Change string `insbefore` to `XMLTransformer::RULE_ADD_BEFORE`
+    * Change string `insstart` to `XMLTransformer::RULE_ADD_START`
+    * Change string `transformInner` to `XMLTransformer::RULE_TRANSFORM_INNER`
+    * Change string `transformOuter` to `XMLTransformer::RULE_TRANSFORM_OUTER`
+    * Change string `tag` to `XMLTransformer::RULE_TAG`
+
+## 1.2 (2015-12-05)
 * Adds missing support for handling CDATA. By default, CDATA sections are retained, but by setting the third argument to `transformString()` to false, CDATA content is replaced with but as PCDATA content with `<` and `>` and `&` escaped.
 
-## From 1.0.3 to 1.1
+## 1.1 (2015-08-15)
 * The callback function/method/closure can receive the attributes by reference. See “Passing attributes by reference” above.
+* Fix for PHP 5.3 compatibility

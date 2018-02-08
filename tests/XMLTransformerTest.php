@@ -244,7 +244,7 @@ class XMLTransformerTest extends TestCase
             $xml,
             function ($tag) {
                 if ('element' === $tag) {
-                    return ['tag' => false];
+                    return [XMLTransformer::RULE_TAG => false];
                 }
             }
         );
@@ -276,12 +276,12 @@ class XMLTransformerTest extends TestCase
             $xml,
             function ($tag) {
                 if ('root' === $tag) {
-                    return ['tag' => 'toplevel'];
+                    return [XMLTransformer::RULE_TAG => 'toplevel'];
                 }
                 if ('element' === $tag) {
-                    return ['tag' => 'a'];
+                    return [XMLTransformer::RULE_TAG => 'a'];
                 }
-                return ['tag' => 'b'];
+                return [XMLTransformer::RULE_TAG => 'b'];
             }
         );
 
@@ -311,7 +311,7 @@ class XMLTransformerTest extends TestCase
             $xml,
             function ($tag) {
                 if ('rng:foo' === $tag) {
-                    return ['tag' => 'test'];
+                    return [XMLTransformer::RULE_TAG => 'test'];
                 }
             }
         );
@@ -367,7 +367,7 @@ class XMLTransformerTest extends TestCase
             $xml,
             function ($tag) {
                 if ('element1' === $tag || 'element2' === $tag) {
-                    return ['tag' => false];
+                    return [XMLTransformer::RULE_TAG => false];
                 }
             }
         );
@@ -643,7 +643,7 @@ __EXP1__;
             function ($tag) {
                 if ('element' === $tag) {
                     return [
-                        'insbefore' => 'Content outside',
+                        XMLTransformer::RULE_ADD_BEFORE => 'Content outside',
                     ];
                 }
             }
@@ -673,7 +673,7 @@ __EXP1__;
             function ($tag) {
                 if ('element' === $tag) {
                     return [
-                        'insstart' => 'Static content + ',
+                        XMLTransformer::RULE_ADD_START => 'Static content + ',
                     ];
                 }
             }
@@ -703,7 +703,7 @@ __EXP1__;
             function ($tag) {
                 if ('element' === $tag) {
                     return [
-                        'insend' => ' + Static content',
+                        XMLTransformer::RULE_ADD_END => ' + Static content',
                     ];
                 }
             }
@@ -733,7 +733,7 @@ __EXP1__;
             function ($tag) {
                 if ('element' === $tag) {
                     return [
-                        'insafter' => 'Stuff behind',
+                        XMLTransformer::RULE_ADD_AFTER => 'Stuff behind',
                     ];
                 }
             }
@@ -755,7 +755,7 @@ __EXP1__;
             function ($tag) {
                 if ('empty' === $tag) {
                     return [
-                        'insafter' => 'Content',
+                        XMLTransformer::RULE_ADD_AFTER => 'Content',
                     ];
                 }
             }
@@ -776,8 +776,8 @@ __EXP1__;
             function ($tag) {
                 if ('empty' === $tag) {
                     return [
-                        'tag'       => false,
-                        'insbefore' => 'Stuff before',
+                        XMLTransformer::RULE_TAG        => false,
+                        XMLTransformer::RULE_ADD_BEFORE => 'Stuff before',
                     ];
                 }
             }
@@ -797,20 +797,22 @@ __EXP1__;
             function ($tag, $attributes, $type) {
                 if ($type === XMLTransformer::ELOPEN) {
                     return [
-                        'tag'      => false,
-                        'insstart' => "<$tag>"
-                    ];
-                } elseif ($type === XMLTransformer::ELCLOSE) {
-                    return [
-                        'tag'    => false,
-                        'insend' => "</$tag>"
-                    ];
-                } else {
-                    return [
-                        'tag'       => false,
-                        'insbefore' => "<$tag/>"
+                        XMLTransformer::RULE_TAG       => false,
+                        XMLTransformer::RULE_ADD_START => "<$tag>",
                     ];
                 }
+
+                if ($type === XMLTransformer::ELCLOSE) {
+                    return [
+                        XMLTransformer::RULE_TAG     => false,
+                        XMLTransformer::RULE_ADD_END => "</$tag>",
+                    ];
+                }
+
+                return [
+                    XMLTransformer::RULE_TAG        => false,
+                    XMLTransformer::RULE_ADD_BEFORE => "<$tag/>",
+                ];
             }
         );
         static::assertSame($xml, $actual);
@@ -827,8 +829,8 @@ __EXP1__;
             '<root><empty /></root>',
             function () {
                 return [
-                    'tag'      => false,
-                    'insstart' => 'String',
+                    XMLTransformer::RULE_TAG       => false,
+                    XMLTransformer::RULE_ADD_START => 'String',
                 ];
             }
         );
@@ -845,8 +847,8 @@ __EXP1__;
             '<root><empty /></root>',
             function () {
                 return [
-                    'tag'    => false,
-                    'insend' => 'String',
+                    XMLTransformer::RULE_TAG     => false,
+                    XMLTransformer::RULE_ADD_END => 'String',
                 ];
             }
         );
@@ -864,7 +866,7 @@ __EXP1__;
             function ($tag) {
                 if ('element' === $tag) {
                     return [
-                        'transformOuter' => function ($str) {
+                        XMLTransformer::RULE_TRANSFORM_OUTER => function ($str) {
                             if ('<element>Element <tag>content</tag></element>' !== $str) {
                                 throw new \UnexpectedValueException('Wrong element content');
                             }
@@ -889,7 +891,7 @@ __EXP1__;
             function ($tag) {
                 if ('element' === $tag) {
                     return [
-                        'transformOuter' => function ($str) {
+                        XMLTransformer::RULE_TRANSFORM_OUTER => function ($str) {
                             return '<foo />';
                         },
                     ];
@@ -911,19 +913,19 @@ __EXP1__;
             function ($tag) {
                 if ('element' === $tag) {
                     return [
-                        'transformOuter' => function ($str) {
+                        XMLTransformer::RULE_TRANSFORM_OUTER => function ($str) {
                             return strip_tags(str_replace('Foobar', 'Hello', $str));
                         },
                     ];
                 }
-                if ('tag' === $tag) {
+                if (XMLTransformer::RULE_TAG === $tag) {
                     return [
-                        'transformOuter' => function () {
+                        XMLTransformer::RULE_TRANSFORM_OUTER => function () {
                             return 'World';
                         },
                     ];
                 }
-                return ['tag' => false];
+                return [XMLTransformer::RULE_TAG => false];
             }
         );
         static::assertSame('Hello World', $actual);
@@ -941,7 +943,7 @@ __EXP1__;
             function ($tag) {
                 if ('element' === $tag) {
                     return [
-                        'transformInner' => function ($str) {
+                        XMLTransformer::RULE_TRANSFORM_INNER => function ($str) {
                             if ('Element <tag>content</tag>' !== $str) {
                                 throw new \UnexpectedValueException('Wrong element content');
                             }
@@ -966,7 +968,7 @@ __EXP1__;
             function ($tag) {
                 if ('element' === $tag) {
                     return [
-                        'transformInner' => function () {
+                        XMLTransformer::RULE_TRANSFORM_INNER => function () {
                             return 'Foo';
                         },
                     ];
@@ -1090,8 +1092,8 @@ class TestObject
     public static function transform($tag)
     {
         return [
-            'tag'      => false,
-            'insstart' => "Callback method was called for <$tag>",
+            XMLTransformer::RULE_TAG       => false,
+            XMLTransformer::RULE_ADD_START => "Callback method was called for <$tag>",
         ];
     }
 }
@@ -1106,8 +1108,8 @@ class TestObject
 function valid_function($tag)
 {
     return [
-        'tag'      => false,
-        'insstart' => "Callback function was called for <$tag>",
+        XMLTransformer::RULE_TAG       => false,
+        XMLTransformer::RULE_ADD_START => "Callback function was called for <$tag>",
     ];
 }
 
