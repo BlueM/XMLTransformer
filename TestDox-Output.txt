@@ -1,28 +1,24 @@
-XMLTransformer
+BlueM\XMLTransformer
  [x] Invoking the transformer with invalid xml produces an error
- [x] Invoking the transformer with an invalid callback function throws an exception
- [x] Invoking the transformer with a valid callback function works
- [x] Invoking the transformer with a valid callback function works when arguments are references
- [x] Invoking the transformer with an unusable method array throws an exception
- [x] Invoking the transformer with an invalid array throws an exception
- [x] Invoke the transformer with a valid callback method
- [x] Invoking the transformer with crap as callback throws an exception
+ [x] A function can be used as callback
+ [x] A function which takes argumens by reference can be used as callback
+ [x] A method can be used as callback
  [x] Returning an unexpected array key throws an exception
  [x] Returning an empty array yields no modifications
- [x] returning an empty array only escapes CDATA if CDATA should not be preserved
+ [x] Returning an empty array only escapes CDATA if CDATA should not be preserved
  [x] Returning nothing or null yields no modifications
  [x] Returning false removes the tag and its content
  [x] Returning false for the tag removes the tag but keeps the content
- [x] Renaming a tag without namespace works
- [x] Renaming a tag with namespaces works
- [x] Removing a tag including content works
- [x] Removing a tag but keeping its content works
- [x] Removing an empty tag works
- [x] Adding attributes with and without namespaces works
- [x] Renaming an attribute works
- [x] Renaming an attribute with namespaces works
- [x] Changing attribute values with and without namespace works
- [x] Removing an attribute works
+ [x] A tag without namespace can be renamed
+ [x] A tag with namespace can be renamed
+ [x] A tag including its content can be removed
+ [x] A tag can be removed while keeping its content
+ [x] An empty tag can be removed
+ [x] Attributes with and without namespace can be added
+ [x] An attribute can be renamed
+ [x] An attribute with namespace can be renamed
+ [x] Values of attributes with and without namespace can be modified
+ [x] An attribute can be removed
  [x] Only attributes which are present in the source tag are renamed
  [x] Content can be inserted before an element
  [x] Content can be prepended to an elements content

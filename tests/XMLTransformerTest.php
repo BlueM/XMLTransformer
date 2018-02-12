@@ -55,9 +55,19 @@ class XMLTransformerTest extends TestCase
      */
     public function aMethodCanBeUsedAsCallback()
     {
+        $tempClass = new class {
+            public static function transform($tag)
+            {
+                return [
+                    XMLTransformer::RULE_TAG       => false,
+                    XMLTransformer::RULE_ADD_START => "Callback method was called for <$tag>",
+                ];
+            }
+        };
+
         $actual = XMLTransformer::transformString(
             '<xml></xml>',
-            [__NAMESPACE__.'\TestObject', 'transform']
+            [$tempClass, 'transform']
         );
         static::assertSame('Callback method was called for <xml>', $actual);
     }
@@ -210,7 +220,7 @@ class XMLTransformerTest extends TestCase
     /**
      * @test
      */
-    public function renamingATagWithoutNamespaceWorks()
+    public function aTagWithoutNamespaceCanBeRenamed()
     {
         $xml = "<root>\n".
                "<element>Element content</element>\n".
@@ -241,7 +251,7 @@ class XMLTransformerTest extends TestCase
     /**
      * @test
      */
-    public function renamingATagWithNamespacesWorks()
+    public function aTagWithNamespaceCanBeRenamed()
     {
         $xml = '<TEI xmlns="http://www.tei-c.org/ns/1.0"'.
                ' xmlns:rng="http://relaxng.org/ns/structure/1.0"'.
@@ -272,7 +282,7 @@ class XMLTransformerTest extends TestCase
     /**
      * @test
      */
-    public function removingATagIncludingContentWorks()
+    public function aTagIncludingItsContentCanBeRemoved()
     {
         $xml = "<root>\n".
                "<element>Element content</element>\n".
@@ -299,7 +309,7 @@ class XMLTransformerTest extends TestCase
     /**
      * @test
      */
-    public function removingATagButKeepingItsContentWorks()
+    public function aTagCanBeRemovedWhileKeepingItsContent()
     {
         $xml = "<root>\n".
                "<element1>Element content</element1>\n".
@@ -328,7 +338,7 @@ class XMLTransformerTest extends TestCase
     /**
      * @test
      */
-    public function removingAnEmptyTagWorks()
+    public function anEmptyTagCanBeRemoved()
     {
         $xml = "<root>\n".
                "<empty />\n".
@@ -353,7 +363,7 @@ class XMLTransformerTest extends TestCase
     /**
      * @test
      */
-    public function addingAttributesWithAndWithoutNamespacesWorks()
+    public function attributesWithAndWithoutNamespaceCanBeAdded()
     {
         $xml = <<<__XML1__
 <root>
@@ -388,7 +398,7 @@ __EXP1__;
     /**
      * @test
      */
-    public function renamingAnAttributeWorks()
+    public function anAttributeCanBeRenamed()
     {
         $xml = <<<__XML1__
 <root a="b" c="d">
@@ -420,7 +430,7 @@ __EXP1__;
     /**
      * @test
      */
-    public function renamingAnAttributeWithNamespacesWorks()
+    public function anAttributeWithNamespaceCanBeRenamed()
     {
         $xml = <<<__XML1__
 <TEI xmlns="http://www.tei-c.org/ns/1.0">
@@ -506,7 +516,7 @@ __EXP__;
     /**
      * @test
      */
-    public function changingAttributeValuesWithAndWithoutNamespaceWorks()
+    public function valuesOfAttributesWithAndWithoutNamespaceCanBeModified()
     {
         $xml = '<root a="b" c="d" xml:id="foo"></root>';
         $exp = '<root a="Contains &lt; &gt; &amp;" c="Literal" xml:id="bar"></root>';
@@ -527,7 +537,7 @@ __EXP__;
     /**
      * @test
      */
-    public function removingAnAttributeWorks()
+    public function anAttributeCanBeRemoved()
     {
         $xml = '<root><element a="b">Foo</element></root>';
         $exp = '<root><element>Foo</element></root>';
@@ -770,7 +780,7 @@ __EXP1__;
 
     /**
      * @test
-     * @expectedException RuntimeException
+     * @expectedException \RuntimeException
      * @expectedExceptionMessage “insstart” does not make sense
      */
     public function tryingToInsertContentAtTheBeginningOfAnEmptyTagThrowsAnException()
@@ -788,7 +798,7 @@ __EXP1__;
 
     /**
      * @test
-     * @expectedException RuntimeException
+     * @expectedException \RuntimeException
      * @expectedExceptionMessage “insend” does not make sense
      */
     public function tryingToInsertContentAtTheEndOfAnEmptyTagThrowsAnException()
@@ -1019,32 +1029,6 @@ __XML1__;
         );
 
         static::assertSame('<root><a>Works as expected</a></root>', $actual);
-    }
-}
-
-/**
- * Dummy class used to test using a method as callback
- */
-class TestObject
-{
-
-    protected function unaccessible()
-    {
-    }
-
-    /**
-     * Dummy method
-     *
-     * @param $tag
-     *
-     * @return array
-     */
-    public static function transform($tag)
-    {
-        return [
-            XMLTransformer::RULE_TAG       => false,
-            XMLTransformer::RULE_ADD_START => "Callback method was called for <$tag>",
-        ];
     }
 }
 
