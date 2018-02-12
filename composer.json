@@ -1,7 +1,7 @@
 {
     "name": "bluem/xmltransformer",
     "type": "library",
-    "description": "Library for transforming any kind of input XML into an output string",
+    "description": "PHP library for transforming XML into XML, HTML, plaintext, …",
     "keywords": ["xml"],
     "homepage": "https://github.com/BlueM/XMLTransformer",
     "license": "BSD-2-Clause",
