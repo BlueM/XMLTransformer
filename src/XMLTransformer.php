@@ -3,34 +3,14 @@
 namespace BlueM;
 
 /**
- * XML transformation class.
+ * Transforms XML into output string using rules returned from a user-supplied callback.
  *
- * Takes an input XML string and transforms it into an output string (which
- * does not have to be XML) according to "rules" defined in a callback
- * function/method/closure given by the user. Currently, it is able to:
- *  -- remove tags, preserving tag content
- *  -- remove tags including all of its content
- *  -- rename tags
- *  -- rename attributes
- *  -- remove attributes
- *  -- add attributes
- *  -- change attribute values
- *  -- insert content before and after a tag
- *  -- insert content at the beginning or end of tag content
- *  -- transform a tag including all of its content by passing it
- *     to a user-defined closure
- *  -- perform any combination of the above
- * Hence, it can be regarded as an alternative to XSL-T especially for cases
- * in which only slight modifications to the XML string are necessary. See doc
- * comments for method transformString() for information on usage.
- *
- * @package XMLTransformer
  * @author  Carsten Bluem <carsten@bluem.net>
  * @license http://www.opensource.org/licenses/bsd-license.php BSD 2-Clause License
  */
 class XMLTransformer
 {
-    const ELOPEN  = 1;
+    const ELOPEN = 1;
     const ELEMPTY = 2;
     const ELCLOSE = 0;
 
@@ -43,8 +23,8 @@ class XMLTransformer
     const RULE_TAG = 'tag';
 
     const ALLOWED_ATTRIBUTE_RULES = [
-        self::RULE_ADD_END         => true,
-        self::RULE_ADD_AFTER       => true,
+        self::RULE_ADD_END => true,
+        self::RULE_ADD_AFTER => true,
         self::RULE_TRANSFORM_INNER => true,
         self::RULE_TRANSFORM_OUTER => true,
     ];
@@ -91,7 +71,7 @@ class XMLTransformer
     protected $transformerStack = [];
 
     /**
-     * Holds the resulting XML
+     * Holds the resulting XML.
      *
      * @var string
      */
@@ -103,80 +83,53 @@ class XMLTransformer
     private $keepCData;
 
     /**
-     * Force static use
+     * Force static use.
      */
     private function __construct()
     {
     }
 
     /**
-     * Performs XML transformation of the string given as argument
+     * Performs XML transformation of the string given as argument.
      *
-     * @param string                $xml      Well-formed XML string to transform
-     * @param string|array|\Closure $callback Name of either a callback function or
-     *        an array with indexes 0: class and 1: method that returns transformation
-     *        info for this tag. (As the function is called for each opening or
-     *        closing tag, it has to be efficient!) Function / method must accept 3
-     *        arguments:
-     *          1. Tag name
-     *          2. Attributes as associative array (also provided for closing tags)
-     *          3. One of the XMLTransformer::EL* constants to indicate the node type
-     *        The function must either false (in which case the tag itself and anything
-     *        inside it is completely ignored) or an array with 0 or more of these keys:
-     *          - "tag" can be a new tag name that will be used instead of the
-     *             original one. If false, the tag will be removed, but its child
-     *             nodes will be preserved.
-     *          - "@<name>" (where <name> is an attribute name) may be false (will
-     *             return the attribute) or a string, either starting with "@" (will
-     *             rename the attribute) or not starting with "@" (literal attr. value)
-     *          - "insbefore" inserts PCDATA before the opening tag
-     *          - "insstart" inserts PCDATA after the opening tag (i.e.: as a
-     *            new first child)
-     *          - "insend" inserts PCDATA directly before the closing tag
-     *          - "insafter" inserts PCDATA after the closing tag
-     *          - "transformOuter" This can be a closure that is passed the
-     *            transformed element including all contained elements as a string.
-     *          - "transformInner" This can be a closure that is passed the transformed
-     *            element's content as a string.
-     *          Anything for which neither false or an appropriate array
-     *          value is returned, is left unmodified.
-     * @param bool                  $keepCData If false (default: true), CDATA content
-     *                                         is not retained as CDATA, but as PCDATA
-     *                                         with < and > and & escaped
+     * @param string   $xml       XML to transform
+     * @param callable $callback  Callback: function, method or closure
+     * @param bool     $keepCData If false (default: true), CDATA content is not retained
+     *                            as CDATA, but as PCDATA with < and > and & escaped
      *
-     * @return mixed Transformation result
-     * @throws \InvalidArgumentException
+     * @return mixed
+     *
      * @throws \RuntimeException
      */
     public static function transformString(string $xml, callable $callback, bool $keepCData = true)
     {
-        $xmltr = new static;
+        $xmltr = new static();
 
-        $xmltr->callback  = $callback;
+        $xmltr->callback = $callback;
         $xmltr->keepCData = $keepCData;
 
-        $r = new \XMLReader;
+        $r = new \XMLReader();
         $r->XML($xml);
 
         $r->setParserProperty(\XMLReader::SUBST_ENTITIES, true);
 
         while ($r->read()) {
             switch ($r->nodeType) {
-                case (\XMLReader::ELEMENT):
+                case \XMLReader::ELEMENT:
                     $xmltr->nodeOpen($r);
                     break;
-                case (\XMLReader::END_ELEMENT):
+                case \XMLReader::END_ELEMENT:
                     $xmltr->nodeClose($r);
                     break;
-                case (\XMLReader::SIGNIFICANT_WHITESPACE):
-                case (\XMLReader::WHITESPACE):
-                    $xmltr->nodeContent($r->value);
+                case \XMLReader::SIGNIFICANT_WHITESPACE:
+                case \XMLReader::WHITESPACE:
+                    $xmltr->addNodeContent($r->value);
                     break;
-                case (\XMLReader::CDATA):
-                    $xmltr->cDataNodeContent($r->value);
+                case \XMLReader::CDATA:
+                    $xmltr->addCDataNodeContent($r->value);
                     break;
-                case (\XMLReader::TEXT):
-                    $xmltr->nodeContent(htmlspecialchars($r->value));
+                case \XMLReader::TEXT:
+                    $xmltr->addNodeContent(htmlspecialchars($r->value));
             }
         }
 
@@ -196,8 +149,9 @@ class XMLTransformer
     {
         if ($this->insideIgnorableTag) {
             if (!$reader->isEmptyElement) {
-                $this->insideIgnorableTag ++;
+                ++$this->insideIgnorableTag;
             }
+
             return;
         }
 
@@ -208,7 +162,7 @@ class XMLTransformer
         } else {
             // Remember the attributes, so the closing tag can access them, too
             $this->stack[] = $attributes;
-            $type          = self::ELOPEN;
+            $type = self::ELOPEN;
         }
 
         $name = $reader->prefix ? $reader->prefix.':'.$reader->localName : $reader->localName;
@@ -217,7 +171,7 @@ class XMLTransformer
 
         if (false === $rules = $callback($name, $attributes, $type)) {
             if (!$reader->isEmptyElement) {
-                $this->insideIgnorableTag ++;
+                ++$this->insideIgnorableTag;
             }
 
             return; // Nothing to do
@@ -308,21 +262,21 @@ class XMLTransformer
     }
 
     /**
-     * Method that will be invoked for any closing XML element
+     * Method that will be invoked for any closing XML element.
      *
      * @param \XMLReader $reader
      */
     protected function nodeClose(\XMLReader $reader)
     {
         if ($this->insideIgnorableTag) {
-            $this->insideIgnorableTag --;
+            --$this->insideIgnorableTag;
         }
 
         if ($this->insideIgnorableTag) {
             return;
         }
 
-        $attributes  = array_pop($this->stack);
+        $attributes = array_pop($this->stack);
         $transformMe = array_pop($this->transformMe);
 
         $name = $reader->prefix ? $reader->prefix.':'.$reader->localName : $reader->localName;
@@ -337,8 +291,8 @@ class XMLTransformer
             $rules = [];
         }
 
-        $tag           = array_key_exists(self::RULE_TAG, $rules) ? $rules[self::RULE_TAG] : $name;
-        $insertInside  = $rules[static::RULE_ADD_END] ?? '';
+        $tag = array_key_exists(self::RULE_TAG, $rules) ? $rules[self::RULE_TAG] : $name;
+        $insertInside = $rules[static::RULE_ADD_END] ?? '';
         $insertOutside = $rules[static::RULE_ADD_AFTER] ?? '';
 
         if ($tag) {
@@ -348,15 +302,15 @@ class XMLTransformer
         if ($transformMe) {
             // Finish this tag by transforming its content
             $transformInfo = array_pop($this->transformerStack);
-            $closure       = $transformInfo[0];
-            $stackContent  = $transformInfo[1];
-            $inner         = $transformInfo[2];
+            $closure = $transformInfo[0];
+            $stackContent = $transformInfo[1];
+            $inner = $transformInfo[2];
             if ($inner) {
                 // Inner transformation
                 $openingTagLen = $transformInfo[3];
-                $openingTag    = substr($stackContent, 0, $openingTagLen);
-                $stackContent  = substr($stackContent, $openingTagLen);
-                $content       = $openingTag.$closure($stackContent.$insertInside).$tag;
+                $openingTag = substr($stackContent, 0, $openingTagLen);
+                $stackContent = substr($stackContent, $openingTagLen);
+                $content = $openingTag.$closure($stackContent.$insertInside).$tag;
             } else {
                 // Outer transformation
                 $content = $closure($stackContent.$insertInside.$tag.$insertOutside);
@@ -375,11 +329,11 @@ class XMLTransformer
     }
 
     /**
-     * Saves the node's text content
+     * Saves the node's text content.
      *
      * @param string $content String with XML special characters esacaped
      */
-    protected function nodeContent($content)
+    protected function addNodeContent($content)
     {
         if ($this->insideIgnorableTag) {
             return;
@@ -395,21 +349,21 @@ class XMLTransformer
     }
 
     /**
-     * Saves the node's text content
+     * Saves the node's text content.
      *
      * @param string $content CDATA content
      */
-    protected function cDataNodeContent($content)
+    protected function addCDataNodeContent($content)
     {
         if ($this->keepCData) {
-            $this->nodeContent("<![CDATA[$content]]>");
+            $this->addNodeContent("<![CDATA[$content]]>");
         } else {
-            $this->nodeContent(htmlspecialchars($content));
+            $this->addNodeContent(htmlspecialchars($content));
         }
     }
 
     /**
-     * Returns the given node's attributes as an associative array
+     * Returns the given node's attributes as an associative array.
      *
      * @param \XMLReader $reader
      *
@@ -441,6 +395,7 @@ class XMLTransformer
      * @param array  $rules      Processing rules
      *
      * @return string
+     *
      * @throws \UnexpectedValueException
      */
     protected function addAttributes(string $tag, array $attributes, array $rules): string
@@ -448,14 +403,14 @@ class XMLTransformer
         foreach ($attributes as $attrname => $value) {
             if (array_key_exists("@$attrname", $rules)) {
                 // There's a rule for this attribute
-                if (false === $rules["@$attrname"]) {
-                    // Skip this attribute
-                } elseif (0 !== strpos($rules["@$attrname"], '@')) {
-                    // Returned value does not start with "@" >> Treat as value
-                    $tag .= sprintf(' %s="%s"', $attrname, htmlspecialchars($rules["@$attrname"]));
-                } else {
-                    // Rename attribute
-                    $tag .= sprintf(' %s="%s"', substr($rules["@$attrname"], 1), $value);
+                if (false !== $rules["@$attrname"]) {
+                    if (0 !== strpos($rules["@$attrname"], '@')) {
+                        // Returned value does not start with "@" >> Treat as value
+                        $tag .= sprintf(' %s="%s"', $attrname, htmlspecialchars($rules["@$attrname"]));
+                    } else {
+                        // Rename attribute
+                        $tag .= sprintf(' %s="%s"', substr($rules["@$attrname"], 1), $value);
+                    }
                 }
                 unset($rules["@$attrname"]);
             } else {
@@ -467,7 +422,7 @@ class XMLTransformer
         // Loop over remaining keys in $attr (i.e.: attributes added in the callback method)
         foreach ($rules as $attrname => $value) {
             if (0 === strpos($attrname, '@')) {
-                if ($value !== false &&
+                if (false !== $value &&
                     0 !== strpos($value, '@')
                 ) {
                     // Add literal value
@@ -490,24 +445,24 @@ class XMLTransformer
     /**
      * @param array  $rules          Processing rules
      * @param string $tagPlusContent Full opening tag, including the content to be
-     *                               added before, if defined by the processing rules.
+     *                               added before, if defined by the processing rules
      */
     protected function updateTransformationStack(array $rules, $tagPlusContent)
     {
         if (isset($rules[self::RULE_TRANSFORM_OUTER]) &&
             $rules[self::RULE_TRANSFORM_OUTER] instanceof \Closure
         ) {
-            $this->transformMe[]      = true;
+            $this->transformMe[] = true;
             $this->transformerStack[] = [$rules[self::RULE_TRANSFORM_OUTER], '', false];
         } elseif (isset($rules[self::RULE_TRANSFORM_INNER]) &&
                   $rules[self::RULE_TRANSFORM_INNER] instanceof \Closure
         ) {
-            $this->transformMe[]      = true;
+            $this->transformMe[] = true;
             $this->transformerStack[] = [
                 $rules[self::RULE_TRANSFORM_INNER],
                 '',
                 true,
-                \strlen($tagPlusContent)
+                \strlen($tagPlusContent),
             ];
         } else {
             $this->transformMe[] = false;
