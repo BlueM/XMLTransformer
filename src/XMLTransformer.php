@@ -10,9 +10,9 @@ namespace BlueM;
  */
 class XMLTransformer
 {
-    const ELOPEN = 1;
-    const ELEMPTY = 2;
-    const ELCLOSE = 0;
+    const ELEMENT_OPEN = 1;
+    const ELEMENT_EMPTY = 2;
+    const ELEMENT_CLOSE = 0;
 
     const RULE_ADD_END = 'insend';
     const RULE_ADD_AFTER = 'insafter';
@@ -158,11 +158,11 @@ class XMLTransformer
         $attributes = $this->getAttributes($reader);
 
         if ($reader->isEmptyElement) {
-            $type = self::ELEMPTY;
+            $type = self::ELEMENT_EMPTY;
         } else {
             // Remember the attributes, so the closing tag can access them, too
             $this->stack[] = $attributes;
-            $type = self::ELOPEN;
+            $type = self::ELEMENT_OPEN;
         }
 
         $name = $reader->prefix ? $reader->prefix.':'.$reader->localName : $reader->localName;
@@ -283,7 +283,7 @@ class XMLTransformer
 
         $callback = $this->callback; // Workaround for being able to pass args by ref
 
-        if (false === $rules = $callback($name, $attributes, self::ELCLOSE)) {
+        if (false === $rules = $callback($name, $attributes, self::ELEMENT_CLOSE)) {
             return;
         }
 

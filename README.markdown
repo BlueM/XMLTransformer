@@ -58,9 +58,9 @@ Callback function arguments
 
 The callback function/method/closure should accept three arguments:
 
-* The element/tag name
-* The element/tag’s attributes (an associative array of name=>value pairs, where the name contains the namespace, if the attribute is not from the default namespace)
-* An element type constant, which will be `XMLTransformer::ELOPEN` for an opening tag, `XMLTransformer::ELEMPTY` for an empty tag and `XMLTransformer::ELCLOSE` for a closing tag.
+* The element / tag name
+* The element / tag’s attributes (an associative array of name=>value pairs, where the name contains the namespace, if the attribute is not from the default namespace)
+* An element type constant, which will be `XMLTransformer::ELEMENT_OPEN` for an opening tag, `XMLTransformer::ELEMENT_EMPTY` for an empty tag and `XMLTransformer::ELEMENT_CLOSE` for a closing tag.
 
 Please note that the attributes will *always* be given, even for a closing tag.
 
@@ -300,6 +300,7 @@ Version history
     * Change string `transformInner` to `XMLTransformer::RULE_TRANSFORM_INNER`
     * Change string `transformOuter` to `XMLTransformer::RULE_TRANSFORM_OUTER`
     * Change string `tag` to `XMLTransformer::RULE_TAG`
+* BC break: constant `XMLTransformer::ELOPEN` was renamed to `XMLTransformer::ELEMENT_OPEN`, `XMLTransformer::ELEMPTY` was renamed to `XMLTransformer::ELEMENT_EMPTY` and `XMLTransformer::ELCLOSE` was renamed to `XMLTransformer::ELEMENT_CLOSE`.
 
 ## 1.2 (2015-12-05)
 * Adds missing support for handling CDATA. By default, CDATA sections are retained, but by setting the third argument to `transformString()` to false, CDATA content is replaced with but as PCDATA content with `<` and `>` and `&` escaped.

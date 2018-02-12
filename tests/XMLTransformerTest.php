@@ -755,14 +755,14 @@ __EXP1__;
         $actual = XMLTransformer::transformString(
             $xml,
             function ($tag, $attributes, $type) {
-                if ($type === XMLTransformer::ELOPEN) {
+                if ($type === XMLTransformer::ELEMENT_OPEN) {
                     return [
                         XMLTransformer::RULE_TAG       => false,
                         XMLTransformer::RULE_ADD_START => "<$tag>",
                     ];
                 }
 
-                if ($type === XMLTransformer::ELCLOSE) {
+                if ($type === XMLTransformer::ELEMENT_CLOSE) {
                     return [
                         XMLTransformer::RULE_TAG     => false,
                         XMLTransformer::RULE_ADD_END => "</$tag>",
