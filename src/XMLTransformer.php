@@ -58,9 +58,7 @@ class XMLTransformer
     protected $insideIgnorableTag = 0;
 
     /**
-     * The callback function, method or Closure
-     *
-     * @var string|array|\Closure
+     * @var callable
      */
     protected $callback;
 
@@ -153,12 +151,6 @@ class XMLTransformer
     public static function transformString(string $xml, callable $callback, bool $keepCData = true)
     {
         $xmltr = new static;
-
-        if (!self::checkCallback($callback)) {
-            throw new \InvalidArgumentException(
-                'Callback must be function, method or closure'
-            );
-        }
 
         $xmltr->callback  = $callback;
         $xmltr->keepCData = $keepCData;
@@ -414,42 +406,6 @@ class XMLTransformer
         } else {
             $this->nodeContent(htmlspecialchars($content));
         }
-    }
-
-    /**
-     * Verifies whether the callback is a valid function, an array
-     * containing a callable class and method, or a Closure.
-     *
-     * @param string|array|\Closure $callback The callback given by the client
-     *
-     * @return bool
-     * @throws \InvalidArgumentException
-     */
-    protected static function checkCallback($callback)
-    {
-        if (\is_string($callback)) {
-            // Function
-            if (!\function_exists($callback)) {
-                throw new \InvalidArgumentException('Invalid callback function');
-            }
-            return true;
-        }
-
-        if (\is_array($callback)) {
-            // Method
-            if (2 !== \count($callback)) {
-                throw new \InvalidArgumentException(
-                    'When an array is passed as callback, it must have exactly 2 members'
-                );
-            }
-            list($class, $method) = $callback;
-            if (!\is_callable([$class, $method])) {
-                throw new \InvalidArgumentException('Invalid callback method');
-            }
-            return true;
-        }
-
-        return is_object($callback) && is_callable($callback);
     }
 
     /**

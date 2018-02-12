@@ -28,21 +28,8 @@ class XMLTransformerTest extends TestCase
 
     /**
      * @test
-     * @expectedException \InvalidArgumentException
-     * @expectedExceptionMessage Invalid callback function
      */
-    public function invokingTheTransformerWithAnInvalidCallbackFunctionThrowsAnException()
-    {
-        XMLTransformer::transformString(
-            '<xml></xml>',
-            'nonexistentfunction'
-        );
-    }
-
-    /**
-     * @test
-     */
-    public function invokingTheTransformerWithAValidCallbackFunctionWorks()
+    public function aFunctionCanBeUsedAsCallback()
     {
         $actual = XMLTransformer::transformString(
             '<xml></xml>',
@@ -54,7 +41,7 @@ class XMLTransformerTest extends TestCase
     /**
      * @test
      */
-    public function invokingTheTransformerWithAValidCallbackFunctionWorksWhenArgumentsAreReferences()
+    public function aFunctionWhichTakesArgumensByReferenceCanBeUsedAsCallback()
     {
         $actual = XMLTransformer::transformString(
             '<xml foo="bar"></xml>',
@@ -66,50 +53,14 @@ class XMLTransformerTest extends TestCase
 
     /**
      * @test
-     * @expectedException \InvalidArgumentException
-     * @expectedExceptionMessage it must have exactly 2
      */
-    public function invokingTheTransformerWithAnUnusableMethodArrayThrowsAnException()
-    {
-        XMLTransformer::transformString(
-            '<xml></xml>',
-            ['stdClass']
-        );
-    }
-
-    /**
-     * @test
-     * @expectedException \InvalidArgumentException
-     * @expectedExceptionMessage Invalid callback method
-     */
-    public function invokingTheTransformerWithAnInvalidArrayThrowsAnException()
-    {
-        XMLTransformer::transformString(
-            '<xml></xml>',
-            [__NAMESPACE__.'TestObject', 'unaccessible']
-        );
-    }
-
-    /**
-     * @test
-     */
-    public function invokeTheTransformerWithAValidCallbackMethod()
+    public function aMethodCanBeUsedAsCallback()
     {
         $actual = XMLTransformer::transformString(
             '<xml></xml>',
             [__NAMESPACE__.'\TestObject', 'transform']
         );
         static::assertSame('Callback method was called for <xml>', $actual);
-    }
-
-    /**
-     * @test
-     * @expectedException \InvalidArgumentException
-     * @expectedExceptionMessage Callback must be function, method or closure
-     */
-    public function invokingTheTransformerWithCrapAsCallbackThrowsAnException()
-    {
-        XMLTransformer::transformString('<xml></xml>', new class {});
     }
 
     /**
