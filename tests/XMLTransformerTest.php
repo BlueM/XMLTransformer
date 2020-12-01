@@ -53,6 +53,28 @@ class XMLTransformerTest extends TestCase
     /**
      * @test
      */
+    public function returningTheTagNameAsNullChangesNothing()
+    {
+        $xml = '<root><element>Element <tag>content</tag></element></root>';
+
+        $actual = XMLTransformer::transformString(
+            $xml,
+            function ($tag) {
+                if ('element' === $tag) {
+                    return [
+                        XMLTransformer::RULE_TAG => null,
+                    ];
+                }
+                return null;
+            }
+        );
+
+        static::assertSame($xml, $actual);
+    }
+
+    /**
+     * @test
+     */
     public function aMethodCanBeUsedAsCallback()
     {
         $tempClass = new class {

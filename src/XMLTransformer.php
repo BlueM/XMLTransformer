@@ -187,7 +187,7 @@ class XMLTransformer
         $insertInside = $rules[self::RULE_ADD_START] ?? '';
         unset($rules[self::RULE_ADD_BEFORE], $rules[self::RULE_ADD_START]);
 
-        $tag = $this->getTag($name, $attributes, $rules, $reader->isEmptyElement);
+        $tag = $this->getTag($name, $attributes, $rules, $reader->isEmptyElement ? self::ELEMENT_EMPTY : self::ELEMENT_OPEN);
 
         if ($reader->isEmptyElement) {
             $insertInside = $rules[self::RULE_ADD_AFTER] ?? '';
@@ -207,21 +207,24 @@ class XMLTransformer
      * @param string $name       Tag/element name of the untransformed element
      * @param array  $attributes Tag attributes
      * @param array  $rules      Processing rules (key "tag" will be removed, if present)
-     * @param bool   $empty      Whether this is an empty element
+     * @param int    $tagType
      *
      * @return string Either full opening tag incl. attributes or an empty string, in
      *                case the tag should be removed.
      *
-     * @throws \UnexpectedValueException
      */
-    protected function getTag($name, array $attributes, array &$rules, bool $empty): string
+    protected function getTag(string $name, array $attributes, array &$rules, int $tagType): string
     {
         $tag = $rules[self::RULE_TAG] ?? $name;
         unset($rules[self::RULE_TAG]);
 
         if ($tag) {
+            if (self::ELEMENT_CLOSE === $tagType) {
+                return "</$tag>";
+            }
+
             $tag = $this->addAttributes($tag, $attributes, $rules);
-            if ($empty) {
+            if (self::ELEMENT_EMPTY === $tagType) {
                 $tag = str_replace('>', ' />', $tag);
             }
 
@@ -291,13 +294,9 @@ class XMLTransformer
             $rules = [];
         }
 
-        $tag = array_key_exists(self::RULE_TAG, $rules) ? $rules[self::RULE_TAG] : $name;
+        $tag = $this->getTag($name, $attributes, $rules, self::ELEMENT_CLOSE);
         $insertInside = $rules[static::RULE_ADD_END] ?? '';
         $insertOutside = $rules[static::RULE_ADD_AFTER] ?? '';
-
-        if ($tag) {
-            $tag = "</$tag>";
-        }
 
         if ($transformMe) {
             // Finish this tag by transforming its content
