@@ -1,7 +1,7 @@
 BlueM\XMLTransformer
  [x] Invoking the transformer with invalid xml produces an error
  [x] A function can be used as callback
- [x] A function which takes argumens by reference can be used as callback
+ [x] A function which takes arguments by reference can be used as callback
  [x] Returning the tag name as null changes nothing
  [x] A method can be used as callback
  [x] Returning an unexpected array key throws an exception

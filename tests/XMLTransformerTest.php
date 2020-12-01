@@ -40,7 +40,7 @@ class XMLTransformerTest extends TestCase
     /**
      * @test
      */
-    public function aFunctionWhichTakesArgumensByReferenceCanBeUsedAsCallback()
+    public function aFunctionWhichTakesArgumentsByReferenceCanBeUsedAsCallback()
     {
         $actual = XMLTransformer::transformString(
             '<xml foo="bar"></xml>',
@@ -1046,7 +1046,7 @@ __XML1__;
         $actual = XMLTransformer::transformString(
             $xml,
             function () {
-                return null; // Do not modify anthing
+                return null; // Do not modify anything
             }
         );
 
