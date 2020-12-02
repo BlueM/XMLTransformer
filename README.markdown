@@ -80,7 +80,7 @@ For instance, this return array …
 
 ```php
 return [
-    'tag' => 'demo',
+    XMLTransformer::RULE_TAG => 'demo',
     '@xml:id' => 'id',
     '@foo' => false,
     XMLTransformer::RULE_ADD_AFTER => '!',
@@ -214,8 +214,8 @@ echo XMLTransformer::transformString(
     '<root xml:id="abc"><bla xml:id="def" blah="yes"/></root>',
     function($tag, $attributes, $opening) {
         return [
-            '@foo'    => 'bar', // Add attribute "foo" with value "bar"
-            '@blah'   => false, // Remove attribute "blah"
+            '@foo' => 'bar', // Add attribute "foo" with value "bar"
+            '@blah' => false, // Remove attribute "blah"
             '@xml:id' => '@id', // Rename attribute "xml:id" to "id"
         ];
     }
@@ -249,6 +249,10 @@ This code was written by Carsten Blüm ([www.bluem.net](http://www.bluem.net)) a
 
 Version history
 ===============
+
+## 2.0.1 (2020-12-02)
+* Fixes an inconsistent behavior in case `null` is returned as value for `XMLTransformer::RULE_TAG` (which is *not* supposed to be done).
+* Just for the record: tests run successfully on PHP8 (not yet in `.travis.yml`, as Travis CI does not support PHP 8 yet).
 
 ## 2.0 (2018-02-12)
 * BC break: minimum PHP version is 7.0
