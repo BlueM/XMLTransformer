@@ -276,4 +276,3 @@ Version history
 
 ## 1.0 (2012-12-12)
 * First public version
-*
