@@ -17,6 +17,9 @@
     "autoload": {
         "psr-4": {"BlueM\\": "src/"}
     },
+    "autoload-dev": {
+        "psr-4": {"BlueM\\": "tests/"}
+    },
     "require-dev": {
         "phpunit/phpunit": "^6.0"
     }
