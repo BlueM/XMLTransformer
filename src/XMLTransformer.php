@@ -118,6 +118,12 @@ class XMLTransformer
             }
         }
 
+        if (!$element) {
+            // Note: according to docs, \XMLReader::XML() should return false when opening
+            // invalid XML. This is no longer the case, hence this workaround.
+            throw new \RuntimeException('Looks like the input XML is empty or invalid.');
+        }
+
         $r->close();
 
         return $transformer->content;

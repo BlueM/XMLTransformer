@@ -13,6 +13,17 @@ use PHPUnit\Framework\TestCase;
 class XMLTransformerTest extends TestCase
 {
     #[Test]
+    #[TestDox('General: an exception is thrown if the XML is invalid')]
+    public function invalidXMLThrowsException(): void
+    {
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('Looks like the input XML is empty or invalid');
+        $xml = '<root><element></root>';
+        error_reporting(E_ERROR); // Suppress the warning
+        XMLTransformer::transformString($xml, static fn () => null);
+    }
+
+    #[Test]
     #[TestDox('General: invoking with a callable which returns null does not alter the XML')]
     public function unchangedXmlIfCallableReturnsNull(): void
     {
