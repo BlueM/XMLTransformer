@@ -250,6 +250,8 @@ This code was written by Carsten Blüm ([www.bluem.net](http://www.bluem.net)) a
 Version history
 ===============
 
+# 3.0 (2024-XX-XX)
+* Breaking change: requires PHP 8.2
 ## 2.0.1 (2020-12-02)
 * Fixes an inconsistent behavior in case `null` is returned as value for `XMLTransformer::RULE_TAG` (which is *not* supposed to be done).
 * Just for the record: tests run successfully on PHP8 (not yet in `.travis.yml`, as Travis CI does not support PHP 8 yet).
