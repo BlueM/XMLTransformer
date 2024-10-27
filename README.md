@@ -1,10 +1,10 @@
 [![Build Status](https://travis-ci.org/BlueM/XMLTransformer.png)](https://travis-ci.org/BlueM/XMLTransformer)
-[![SensioLabsInsight](https://insight.sensiolabs.com/projects/3f1631ee-2286-4c0e-b21c-da192bb3efba/mini.png)](https://insight.sensiolabs.com/projects/3f1631ee-2286-4c0e-b21c-da192bb3efba)
 
 Overview
 ========
 XMLTransformer is a PHP library for transforming any kind of input XML into an output string. This output string does not have to be XML, but can also be, for instance, HTML or plain text.
 
+It has no dependencies besides PHP itself, no known bugs and 100% test coverage.
 
 Transformations
 ---------------
@@ -32,7 +32,7 @@ When the input data has to be re-arranged, you are probably better off with XSL-
 
 Installation
 ============
-The recommended way to install this library is through [Composer](https://getcomposer.org). For this, add `"bluem/xmltransformer": "~2.0"` to the requirements in your `composer.json` file. As the library uses [semantic versioning](http://semver.org), you will get fixes and feature additions, but not changes which break the API.
+The recommended way to install this library is through [Composer](https://getcomposer.org). For this, add `"bluem/xmltransformer": "~3.0"` to the requirements in your `composer.json` file. As the library uses [semantic versioning](http://semver.org), you will get fixes and feature additions, but not changes which break the API.
 
 Alternatively, you can clone the repository using git or download an [archived release](https://github.com/BlueM/XMLTransformer/releases).
 
@@ -90,8 +90,8 @@ return [
 … means:
 
 * Rename the tag to “demo”
-* Rename the “xml:id” attribute to “id”
-* Remove the “@foo” attribute
+* Rename the `xml:id` attribute to `id`
+* Remove the `@foo` attribute
 * Insert the string “!” after the closing tag (or directly after the tag, if it’s an empty tag)
 
 Please note that (as `XMLTransformer` is not restricted to produce XML) no automatic escaping is done to values returned by the array. Only exception: attribute values, as XMLTransformer assumes that if you set attribute values, you want XML or HTML output.
@@ -250,8 +250,11 @@ This code was written by Carsten Blüm ([www.bluem.net](http://www.bluem.net)) a
 Version history
 ===============
 
-# 3.0 (2024-XX-XX)
+# 3.0 (2024-10-27)
 * Breaking change: requires PHP 8.2
+* Breaking change (at least theoretically): trying to apply an outer transformation to an empty tag throws an exception. It did not work in previous versions, anyway, but failed silently.
+* General codebase modernization: use modern language features, add PHPStan and php-cs-fixer, fix code style, add typehints, drop redundant doc comments, drop redundant tests
+
 ## 2.0.1 (2020-12-02)
 * Fixes an inconsistent behavior in case `null` is returned as value for `XMLTransformer::RULE_TAG` (which is *not* supposed to be done).
 * Just for the record: tests run successfully on PHP8 (not yet in `.travis.yml`, as Travis CI does not support PHP 8 yet).
