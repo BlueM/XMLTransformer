@@ -1,2 +1,4 @@
-/vendor
+/.phpunit.*
 /composer.lock
+/coverage
+/vendor

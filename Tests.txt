@@ -1,0 +1,40 @@
+XMLTransformer (BlueM\XMLTransformer)
+ [x] General: an exception is thrown if the XML is invalid
+ [x] General: invoking with a callable which returns null does not alter the XML
+ [x] General: invoking with a callable which returns an empty array does not alter the XML
+ [x] General: CDATA is escaped, if CDATA should not be preserved
+ [x] General: using an unexpected key in an array returned from the callback throws an exception
+ [x] General: the callback closure is given the correct tag type constant as argument
+ [x] General: entities are substituted with their value
+ [x] Tags: returning null for the tag name does not modify the tag
+ [x] Tags: returning false removes the tag and its content
+ [x] Tags: content after a tag to be removed is not removed
+ [x] Tags: returning false removes an empty tag
+ [x] Tags: returning false for the tag rule removes the tag, but keeps its content
+ [x] Tags: a tag in the default namespace can be renamed
+ [x] Tags: a tag with namespace can be renamed
+ [x] Attributes: attributes with or without namespace can be added
+ [x] Attributes: an attribute in the default namespace can be renamed
+ [x] Attributes: an attribute with namespace can be renamed
+ [x] Attributes: the value of an attribute in the default namespace can be changed
+ [x] Attributes: the value of an attribute with namespace can be renamed
+ [x] Attributes: an attribute in the default namespace can be removed
+ [x] Attributes: an attribute with namespace can be removed
+ [x] Attributes: when renaming attributes, no attributes are accidentally added
+ [x] Attributes: escaped special characters remain unmodified in attribute values
+ [x] Insertion: content can be inserted before an element
+ [x] Insertion: content can be inserted before an element’ content
+ [x] Insertion: content can be inserted before an element’s closing tag
+ [x] Insertion: content can be inserted after an element’s closing tag
+ [x] Insertion: content can be inserted after an empty element
+ [x] Insertion: content can be inserted before an empty element that should be removed
+ [x] Insertion: trying to insert content at the beginning of an empty tag throws an exception
+ [x] Insertion: trying to insert content at the end of an empty tag throws an exception
+ [x] Transformation: an outer transformation callback gets the unmodified content as argument
+ [x] Transformation: an outer transformation replaces the tag and its content
+ [x] Transformation: outer transformations can be applied to nested tags
+ [x] Transformation: trying to use an outer transformation on an empty tag throws an exception
+ [x] Transformation: an inner transformation callback gets the unmodified content as argument
+ [x] Transformation: an inner transformation replaces the tag and its content
+ [x] Transformation: an inner transformation on an empty tag replaces the tag
+

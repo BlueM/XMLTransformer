@@ -2,6 +2,8 @@
 
 namespace BlueM;
 
+use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\Attributes\TestDox;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -10,98 +12,57 @@ use PHPUnit\Framework\TestCase;
  */
 class XMLTransformerTest extends TestCase
 {
-    /**
-     * @test
-     * @expectedException \PHPUnit\Framework\Error\Warning
-     */
-    public function invokingTheTransformerWithInvalidXmlProducesAnError()
+    #[Test]
+    #[TestDox('General: invoking with a callable which returns null does not alter the XML')]
+    public function unchangedXmlIfCallableReturnsNull(): void
     {
-        XMLTransformer::transformString(
-            '<xml></xl>',
-            function () {
-            }
-        );
+        $xml = '<root><element>Element content</element><empty /></root>';
+
+        static::assertSame($xml, XMLTransformer::transformString($xml, static fn () => null));
     }
 
-    /**
-     * @test
-     */
-    public function aFunctionCanBeUsedAsCallback()
+    #[Test]
+    #[TestDox('General: invoking with a callable which returns an empty array does not alter the XML')]
+    public function unchangedXmlIfCallableReturnsEmptyArray(): void
     {
-        $actual = XMLTransformer::transformString(
-            '<xml></xml>',
-            __NAMESPACE__.'\valid_function'
-        );
-        static::assertSame('Callback function was called for <xml>', $actual);
+        $xml = "<root>\n".
+            "<element1>Element content</element1>\n".
+            "<element2><![CDATA[This is content: < & >]]> <![CDATA[More <strong>cdata</strong>.]]></element2>\n".
+            "<empty />\n".
+            '</root>';
+
+        static::assertSame($xml, XMLTransformer::transformString($xml, static fn () => []));
     }
 
-    /**
-     * @test
-     */
-    public function aFunctionWhichTakesArgumentsByReferenceCanBeUsedAsCallback()
+    #[Test]
+    #[TestDox('General: CDATA is escaped, if CDATA should not be preserved')]
+    public function cdataCanBeEscaped(): void
     {
-        $actual = XMLTransformer::transformString(
-            '<xml foo="bar"></xml>',
-            __NAMESPACE__.'\valid_function_by_ref'
-        );
+        $xml = "<root>\n".
+            "<element1>Element content</element1>\n".
+            "<element2><![CDATA[This is content: < & >]]> <![CDATA[More <strong>cdata</strong>]]></element2>\n".
+            "<empty />\n".
+            '</root>';
 
-        static::assertSame('<xml></xml>', $actual);
+        $exp = "<root>\n".
+            "<element1>Element content</element1>\n".
+            "<element2>This is content: &lt; &amp; &gt; More &lt;strong&gt;cdata&lt;/strong&gt;</element2>\n".
+            "<empty />\n".
+            '</root>';
+
+        static::assertSame($exp, XMLTransformer::transformString($xml, static fn () => null, false));
     }
 
-    /**
-     * @test
-     */
-    public function returningTheTagNameAsNullChangesNothing()
+    #[Test]
+    #[TestDox('General: using an unexpected key in an array returned from the callback throws an exception')]
+    public function returningAnUnexpectedArrayKeyThrowsAnException(): void
     {
-        $xml = '<root><element>Element <tag>content</tag></element></root>';
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('Unexpected key “unexpected” in array returned');
 
-        $actual = XMLTransformer::transformString(
-            $xml,
-            function ($tag) {
-                if ('element' === $tag) {
-                    return [
-                        XMLTransformer::RULE_TAG => null,
-                    ];
-                }
-                return null;
-            }
-        );
-
-        static::assertSame($xml, $actual);
-    }
-
-    /**
-     * @test
-     */
-    public function aMethodCanBeUsedAsCallback()
-    {
-        $tempClass = new class {
-            public static function transform($tag)
-            {
-                return [
-                    XMLTransformer::RULE_TAG       => false,
-                    XMLTransformer::RULE_ADD_START => "Callback method was called for <$tag>",
-                ];
-            }
-        };
-
-        $actual = XMLTransformer::transformString(
-            '<xml></xml>',
-            [$tempClass, 'transform']
-        );
-        static::assertSame('Callback method was called for <xml>', $actual);
-    }
-
-    /**
-     * @test
-     * @expectedException \UnexpectedValueException
-     * @expectedExceptionMessage Unexpected key “unexpected” in array returned
-     */
-    public function returningAnUnexpectedArrayKeyThrowsAnException()
-    {
         XMLTransformer::transformString(
             '<root></root>',
-            function () {
+            static function () {
                 return [
                     'unexpected' => 'value',
                 ];
@@ -109,85 +70,82 @@ class XMLTransformerTest extends TestCase
         );
     }
 
-    /**
-     * @test
-     */
-    public function returningAnEmptyArrayYieldsNoModifications()
+    #[Test]
+    #[TestDox('General: the callback closure is given the correct tag type constant as argument')]
+    public function callbackArgument3IsCorrect(): void
     {
-        $xml = "<root>\n".
-               "<element1>Element content</element1>\n".
-               "<element2><![CDATA[This is content: < & >]]> <![CDATA[More <strong>cdata</strong>.]]></element2>\n".
-               "<empty />\n".
-               '</root>';
+        $xml = '<root><a><b>Hello world</b></a><c/></root>';
 
         $actual = XMLTransformer::transformString(
             $xml,
-            function () {
-                return [];
-            }
-        );
+            static function (string $tag, array $attributes, int $type) {
+                if (XMLTransformer::ELEMENT_OPEN === $type) {
+                    return [
+                        XMLTransformer::RULE_TAG => false,
+                        XMLTransformer::RULE_ADD_START => "<$tag>",
+                    ];
+                }
 
-        static::assertSame($xml, $actual);
-    }
+                if (XMLTransformer::ELEMENT_CLOSE === $type) {
+                    return [
+                        XMLTransformer::RULE_TAG => false,
+                        XMLTransformer::RULE_ADD_END => "</$tag>",
+                    ];
+                }
 
-    /**
-     * @test
-     */
-    public function returning_an_empty_array_only_escapes_CDATA_if_CDATA_should_not_be_preserved()
-    {
-        $xml = "<root>\n".
-               "<element1>Element content</element1>\n".
-               "<element2><![CDATA[This is content: < & >]]> <![CDATA[More <strong>cdata</strong>]]></element2>\n".
-               "<empty />\n".
-               '</root>';
-
-        $exp = "<root>\n".
-               "<element1>Element content</element1>\n".
-               "<element2>This is content: &lt; &amp; &gt; More &lt;strong&gt;cdata&lt;/strong&gt;</element2>\n".
-               "<empty />\n".
-               '</root>';
-
-        $actual = XMLTransformer::transformString(
-            $xml,
-            function () {
-                return [];
-            },
-            false
-        );
-
-        static::assertSame($exp, $actual);
-    }
-
-    /**
-     * @test
-     */
-    public function returningNothingOrNullYieldsNoModifications()
-    {
-        $xml = "<root>\n".
-               "<element>Element content</element>\n".
-               "<empty />\n".
-               '</root>';
-
-        $actual = XMLTransformer::transformString(
-            $xml,
-            function ($tag, $attributes, $opening) {
+                return [
+                    XMLTransformer::RULE_TAG => false,
+                    XMLTransformer::RULE_ADD_BEFORE => "<$tag/>",
+                ];
             }
         );
         static::assertSame($xml, $actual);
+    }
+
+    #[Test]
+    #[TestDox('General: entities are substituted with their value')]
+    public function entitiesAreSubstituted(): void
+    {
+        /** @noinspection CheckDtdRefs */
+        $xml = <<<__XML1__
+            <!DOCTYPE dummy
+            [
+            <!ENTITY w "Works as expected">
+            ]>
+            <root><a>&w;</a></root>
+__XML1__;
+
+        static::assertSame(
+            '<root><a>Works as expected</a></root>',
+            XMLTransformer::transformString($xml, static fn () => null)
+        );
+    }
+
+    #[Test]
+    #[TestDox('Tags: returning null for the tag name does not modify the tag')]
+    public function unchangedTagIfTagNameIsReturnedAsNull(): void
+    {
+        $xml = '<root><element>Element <tag>content</tag></element></root>';
 
         $actual = XMLTransformer::transformString(
             $xml,
-            function () {
+            static function ($tag) {
+                if ('element' === $tag) {
+                    return [
+                        XMLTransformer::RULE_TAG => null,
+                    ];
+                }
+
                 return null;
             }
         );
+
         static::assertSame($xml, $actual);
     }
 
-    /**
-     * @test
-     */
-    public function returningFalseRemovesTheTagAndItsContent()
+    #[Test]
+    #[TestDox('Tags: returning false removes the tag and its content')]
+    public function removeTagAndContent(): void
     {
         $xml = "<root>\n".
                "<ignore>Element <em>content</em></ignore>\n".
@@ -196,10 +154,12 @@ class XMLTransformerTest extends TestCase
 
         $actual = XMLTransformer::transformString(
             $xml,
-            function ($tag) {
+            static function ($tag) {
                 if ('ignore' === $tag) {
                     return false;
                 }
+
+                return null;
             }
         );
 
@@ -210,180 +170,127 @@ class XMLTransformerTest extends TestCase
         static::assertSame($exp, $actual);
     }
 
-    /**
-     * @test
-     */
-    public function returningFalseForTheTagRemovesTheTagButKeepsTheContent()
+    #[Test]
+    #[TestDox('Tags: content after a tag to be removed is not removed')]
+    public function keepContentAfterIgnorableTag(): void
     {
-        $xml = "<root>\n".
-               "<element>Element <em>content</em></element>\n".
-               "<empty />\n".
-               '</root>';
+        $xml = <<<__XML1__
+<root>
+<a><ignore><b>Blah</b><ignore>content</ignore></ignore><ignore>content</ignore>Xyz</a>
+</root>
+__XML1__;
+
+        $expected = <<<__XML2__
+<root>
+<a>Xyz</a>
+</root>
+__XML2__;
 
         $actual = XMLTransformer::transformString(
             $xml,
-            function ($tag) {
+            static function ($tag) {
+                if ('ignore' === $tag) {
+                    return false;
+                }
+
+                return null;
+            }
+        );
+        static::assertSame($expected, $actual);
+    }
+
+    #[Test]
+    #[TestDox('Tags: returning false removes an empty tag')]
+    public function removeEmptyTagAndContent(): void
+    {
+        $xml = '<root><empty /></root>';
+
+        $actual = XMLTransformer::transformString(
+            $xml,
+            static fn ($tag) => 'empty' === $tag ? false : null
+        );
+
+        static::assertSame('<root></root>', $actual);
+    }
+
+    #[Test]
+    #[TestDox('Tags: returning false for the tag rule removes the tag, but keeps its content')]
+    public function removeTag(): void
+    {
+        $xml = '<root><element>Element <em>content</em></element><empty /></root>';
+
+        $actual = XMLTransformer::transformString(
+            $xml,
+            static function ($tag) {
                 if ('element' === $tag) {
                     return [XMLTransformer::RULE_TAG => false];
                 }
+
+                return null;
             }
         );
 
-        $exp = "<root>\n".
-               "Element <em>content</em>\n".
-               "<empty />\n".
-               '</root>';
+        $expected = '<root>Element <em>content</em><empty /></root>';
 
-        static::assertSame($exp, $actual);
+        static::assertSame($expected, $actual);
     }
 
-    /**
-     * @test
-     */
-    public function aTagWithoutNamespaceCanBeRenamed()
+    #[Test]
+    #[TestDox('Tags: a tag in the default namespace can be renamed')]
+    public function renameTagInDefaultNamespace(): void
     {
-        $xml = "<root>\n".
-               "<element>Element content</element>\n".
-               "<empty/>\n".
-               '</root>';
+        $xml = '<root><element>Element content</element><empty/></root>';
 
-        $exp = "<toplevel>\n".
-               "<a>Element content</a>\n".
-               "<b />\n".
-               '</toplevel>';
+        $expected = '<toplevel><a>Element content</a><b /></toplevel>';
 
         $actual = XMLTransformer::transformString(
             $xml,
-            function ($tag) {
+            static function ($tag) {
                 if ('root' === $tag) {
                     return [XMLTransformer::RULE_TAG => 'toplevel'];
                 }
                 if ('element' === $tag) {
                     return [XMLTransformer::RULE_TAG => 'a'];
                 }
+
                 return [XMLTransformer::RULE_TAG => 'b'];
             }
         );
 
-        static::assertSame($exp, $actual);
+        static::assertSame($expected, $actual);
     }
 
-    /**
-     * @test
-     */
-    public function aTagWithNamespaceCanBeRenamed()
+    #[Test]
+    #[TestDox('Tags: a tag with namespace can be renamed')]
+    public function renameTagWithNamespace(): void
     {
-        $xml = '<TEI xmlns="http://www.tei-c.org/ns/1.0"'.
-               ' xmlns:rng="http://relaxng.org/ns/structure/1.0"'.
-               ' xml:lang="de">'."\n".
+        $xml = '<TEI xmlns="http://www.tei-c.org/ns/1.0" xmlns:rng="http://relaxng.org/ns/structure/1.0" xml:lang="de">'.
                "<rng:foo>Element content</rng:foo>\n".
                "<foo>Should not be changed</foo>\n".
                '</TEI>';
 
-        $exp = '<TEI xmlns="http://www.tei-c.org/ns/1.0"'.
-               ' xmlns:rng="http://relaxng.org/ns/structure/1.0"'.
-               ' xml:lang="de">'."\n".
+        $exp = '<TEI xmlns="http://www.tei-c.org/ns/1.0" xmlns:rng="http://relaxng.org/ns/structure/1.0" xml:lang="de">'.
                "<test>Element content</test>\n".
                "<foo>Should not be changed</foo>\n".
                '</TEI>';
 
         $actual = XMLTransformer::transformString(
             $xml,
-            function ($tag) {
+            static function ($tag) {
                 if ('rng:foo' === $tag) {
                     return [XMLTransformer::RULE_TAG => 'test'];
                 }
+
+                return null;
             }
         );
 
         static::assertSame($exp, $actual);
     }
 
-    /**
-     * @test
-     */
-    public function aTagIncludingItsContentCanBeRemoved()
-    {
-        $xml = "<root>\n".
-               "<element>Element content</element>\n".
-               "<empty />\n".
-               '</root>';
-
-        $exp = "<root>\n".
-               "\n".
-               "<empty />\n".
-               '</root>';
-
-        $actual = XMLTransformer::transformString(
-            $xml,
-            function ($tag) {
-                if ('element' === $tag) {
-                    return false;
-                }
-            }
-        );
-
-        static::assertSame($exp, $actual);
-    }
-
-    /**
-     * @test
-     */
-    public function aTagCanBeRemovedWhileKeepingItsContent()
-    {
-        $xml = "<root>\n".
-               "<element1>Element content</element1>\n".
-               "<element2><![CDATA[Hello world < & >]]></element2>\n".
-               "<empty />\n".
-               '</root>';
-
-        $exp = "<root>\n".
-               "Element content\n".
-               "<![CDATA[Hello world < & >]]>\n".
-               "<empty />\n".
-               '</root>';
-
-        $actual = XMLTransformer::transformString(
-            $xml,
-            function ($tag) {
-                if ('element1' === $tag || 'element2' === $tag) {
-                    return [XMLTransformer::RULE_TAG => false];
-                }
-            }
-        );
-
-        static::assertSame($exp, $actual);
-    }
-
-    /**
-     * @test
-     */
-    public function anEmptyTagCanBeRemoved()
-    {
-        $xml = "<root>\n".
-               "<empty />\n".
-               '</root>';
-
-        $exp = "<root>\n".
-               "\n".
-               '</root>';
-
-        $actual = XMLTransformer::transformString(
-            $xml,
-            function ($tag) {
-                if ('empty' === $tag) {
-                    return false;
-                }
-            }
-        );
-
-        static::assertSame($exp, $actual);
-    }
-
-    /**
-     * @test
-     */
-    public function attributesWithAndWithoutNamespaceCanBeAdded()
+    #[Test]
+    #[TestDox('Attributes: attributes with or without namespace can be added')]
+    public function addAttributes(): void
     {
         $xml = <<<__XML1__
 <root>
@@ -401,12 +308,13 @@ __EXP1__;
 
         $actual = XMLTransformer::transformString(
             $xml,
-            function ($tag) {
+            static function ($tag) {
                 if ('element' === $tag || 'empty' === $tag) {
                     return [
                         '@attr' => 'value',
                     ];
                 }
+
                 return [
                     '@xml:id' => 'abc"123',
                 ];
@@ -415,10 +323,9 @@ __EXP1__;
         static::assertSame($exp, $actual);
     }
 
-    /**
-     * @test
-     */
-    public function anAttributeCanBeRenamed()
+    #[Test]
+    #[TestDox('Attributes: an attribute in the default namespace can be renamed')]
+    public function renameAttributeInDefaultNamespace(): void
     {
         $xml = <<<__XML1__
 <root a="b" c="d">
@@ -436,21 +343,22 @@ __EXP1__;
 
         $actual = XMLTransformer::transformString(
             $xml,
-            function ($tag) {
+            static function ($tag) {
                 if ('empty' !== $tag) {
                     return [
                         '@a' => '@newname',
                     ];
                 }
+
+                return null;
             }
         );
         static::assertSame($exp, $actual);
     }
 
-    /**
-     * @test
-     */
-    public function anAttributeWithNamespaceCanBeRenamed()
+    #[Test]
+    #[TestDox('Attributes: an attribute with namespace can be renamed')]
+    public function renameAttributeWithNamespace(): void
     {
         $xml = <<<__XML1__
 <TEI xmlns="http://www.tei-c.org/ns/1.0">
@@ -466,13 +374,15 @@ __EXP__;
 
         $actual = XMLTransformer::transformString(
             $xml,
-            function ($tag) {
+            static function ($tag) {
                 if ('element' === $tag) {
                     return [
-                        '@a'     => '@xyz',
+                        '@a' => '@xyz',
                         '@xml:a' => '@c',
                     ];
                 }
+
+                return null;
             }
         );
         static::assertSame($exp, $actual);
@@ -485,12 +395,14 @@ __EXP__;
 
         $actual = XMLTransformer::transformString(
             $xml,
-            function ($tag) {
+            static function ($tag) {
                 if ('element' === $tag) {
                     return [
                         '@xml:a' => 'Literal',
                     ];
                 }
+
+                return null;
             }
         );
         static::assertSame($exp, $actual);
@@ -503,12 +415,14 @@ __EXP__;
 
         $actual = XMLTransformer::transformString(
             $xml,
-            function ($tag) {
+            static function ($tag) {
                 if ('element' === $tag) {
                     return [
                         '@xml:a' => false,
                     ];
                 }
+
+                return null;
             }
         );
         static::assertSame($exp, $actual);
@@ -521,62 +435,91 @@ __EXP__;
 
         $actual = XMLTransformer::transformString(
             $xml,
-            function ($tag) {
+            static function ($tag) {
                 if ('element' === $tag) {
                     return [
-                        '@a'     => '@xml:id',
+                        '@a' => '@xml:id',
                         '@xml:a' => '@rs',
                     ];
                 }
+
+                return null;
             }
         );
         static::assertSame($exp, $actual);
     }
 
-    /**
-     * @test
-     */
-    public function valuesOfAttributesWithAndWithoutNamespaceCanBeModified()
+    #[Test]
+    #[TestDox('Attributes: the value of an attribute in the default namespace can be changed')]
+    public function changeValueOfAnAttributeInDefaultNamespace(): void
     {
-        $xml = '<root a="b" c="d" xml:id="foo"></root>';
-        $exp = '<root a="Contains &lt; &gt; &amp;" c="Literal" xml:id="bar"></root>';
+        $xml = '<root a="change me" b="unchanged" xml:id="foo"></root>';
 
         $actual = XMLTransformer::transformString(
             $xml,
-            function () {
+            static function () {
                 return [
-                    '@c'      => 'Literal',
-                    '@a'      => 'Contains < > &',
-                    '@xml:id' => 'bar',
+                    '@a' => 'Contains < > &',
                 ];
             }
         );
-        static::assertSame($exp, $actual);
+
+        static::assertSame('<root a="Contains &lt; &gt; &amp;" b="unchanged" xml:id="foo"></root>', $actual);
     }
 
-    /**
-     * @test
-     */
-    public function anAttributeCanBeRemoved()
+    #[Test]
+    #[TestDox('Attributes: the value of an attribute with namespace can be renamed')]
+    public function changeValueOfAnAttributeWithNamespace(): void
     {
-        $xml = '<root><element a="b">Foo</element></root>';
-        $exp = '<root><element>Foo</element></root>';
+        $xml = '<root xmlns:rng="http://relaxng.org/ns/structure/1.0" a="unchanged" b="unchanged" rng:id="change me"></root>';
 
         $actual = XMLTransformer::transformString(
             $xml,
-            function () {
+            static function () {
+                return [
+                    '@rng:id' => 'Contains < > &',
+                ];
+            }
+        );
+
+        static::assertSame('<root xmlns:rng="http://relaxng.org/ns/structure/1.0" a="unchanged" b="unchanged" rng:id="Contains &lt; &gt; &amp;"></root>', $actual);
+    }
+
+    #[Test]
+    #[TestDox('Attributes: an attribute in the default namespace can be removed')]
+    public function removeAttributeInDefaultNamespace(): void
+    {
+        $actual = XMLTransformer::transformString(
+            '<root><element a="b">Foo</element></root>',
+            static function () {
                 return [
                     '@a' => false,
                 ];
             }
         );
-        static::assertSame($exp, $actual);
+
+        static::assertSame('<root><element>Foo</element></root>', $actual);
     }
 
-    /**
-     * @test
-     */
-    public function onlyAttributesWhichArePresentInTheSourceTagAreRenamed()
+    #[Test]
+    #[TestDox('Attributes: an attribute with namespace can be removed')]
+    public function removeAttributeWithNamespace(): void
+    {
+        $actual = XMLTransformer::transformString(
+            '<root><element xml:id="foo">Foo</element></root>',
+            static function () {
+                return [
+                    '@xml:id' => false,
+                ];
+            }
+        );
+
+        static::assertSame('<root><element>Foo</element></root>', $actual);
+    }
+
+    #[Test]
+    #[TestDox('Attributes: when renaming attributes, no attributes are accidentally added')]
+    public function onlyAttributesWhichArePresentInTheSourceTagAreRenamed(): void
     {
         $xml = <<<__XML1__
 <root a="b" c="d">
@@ -592,7 +535,7 @@ __EXP1__;
 
         $actual = XMLTransformer::transformString(
             $xml,
-            function () {
+            static function () {
                 return [
                     '@c' => '@d',
                 ];
@@ -601,40 +544,39 @@ __EXP1__;
         static::assertSame($exp, $actual);
     }
 
-    /**
-     * @test
-     */
-    public function contentCanBeInsertedBeforeAnElement()
+    #[Test]
+    #[TestDox('Attributes: escaped special characters remain unmodified in attribute values')]
+    public function escapedCharsInAttributes(): void
     {
-        $xml = <<<__XML1__
-<root>
-<element>Element content</element>
-</root>
-__XML1__;
+        $xml = '<root><test attr="&amp; &lt; &gt;">Foo</test></root>';
+        $expected = '<root><test attr="&amp; &lt; &gt;">Foo</test></root>';
 
-        $exp = <<<__EXP1__
-<root>
-Content outside<element>Element content</element>
-</root>
-__EXP1__;
-
-        $actual = XMLTransformer::transformString(
-            $xml,
-            function ($tag) {
-                if ('element' === $tag) {
-                    return [
-                        XMLTransformer::RULE_ADD_BEFORE => 'Content outside',
-                    ];
-                }
-            }
-        );
-        static::assertSame($exp, $actual);
+        static::assertSame($expected, XMLTransformer::transformString($xml, static fn () => null));
     }
 
-    /**
-     * @test
-     */
-    public function contentCanBePrependedToAnElementsContent()
+    #[Test]
+    #[TestDox('Insertion: content can be inserted before an element')]
+    public function addContentBeforeElement(): void
+    {
+        $actual = XMLTransformer::transformString(
+            '<root><element>Element content</element></root>',
+            static function ($tag) {
+                if ('element' === $tag) {
+                    return [
+                        XMLTransformer::RULE_ADD_BEFORE => 'Content before',
+                    ];
+                }
+
+                return null;
+            }
+        );
+
+        static::assertSame('<root>Content before<element>Element content</element></root>', $actual);
+    }
+
+    #[Test]
+    #[TestDox('Insertion: content can be inserted before an element’ content')]
+    public function addContentAtStartOfElement(): void
     {
         $xml = <<<__XML1__
 <root>
@@ -650,21 +592,22 @@ __EXP1__;
 
         $actual = XMLTransformer::transformString(
             $xml,
-            function ($tag) {
+            static function ($tag) {
                 if ('element' === $tag) {
                     return [
                         XMLTransformer::RULE_ADD_START => 'Static content + ',
                     ];
                 }
+
+                return null;
             }
         );
         static::assertSame($exp, $actual);
     }
 
-    /**
-     * @test
-     */
-    public function contentCanBeAppendedToAnElementsContent()
+    #[Test]
+    #[TestDox('Insertion: content can be inserted before an element’s closing tag')]
+    public function addContentAtEndOfElement(): void
     {
         $xml = <<<__XML1__
 <root>
@@ -680,21 +623,22 @@ __EXP1__;
 
         $actual = XMLTransformer::transformString(
             $xml,
-            function ($tag) {
+            static function ($tag) {
                 if ('element' === $tag) {
                     return [
                         XMLTransformer::RULE_ADD_END => ' + Static content',
                     ];
                 }
+
+                return null;
             }
         );
         static::assertSame($exp, $actual);
     }
 
-    /**
-     * @test
-     */
-    public function contentCanBeInsertedAfterANonEmptyElement()
+    #[Test]
+    #[TestDox('Insertion: content can be inserted after an element’s closing tag')]
+    public function addContentAfterElement(): void
     {
         $xml = <<<__XML1__
 <root>
@@ -710,187 +654,159 @@ __EXP1__;
 
         $actual = XMLTransformer::transformString(
             $xml,
-            function ($tag) {
+            static function ($tag) {
                 if ('element' === $tag) {
                     return [
                         XMLTransformer::RULE_ADD_AFTER => 'Stuff behind',
                     ];
                 }
+
+                return null;
             }
         );
         static::assertSame($exp, $actual);
     }
 
-    /**
-     * @test
-     * @ticket 2
-     */
-    public function contentCanBeInsertedAfterAnEmptyElement()
+    #[Test]
+    #[TestDox('Insertion: content can be inserted after an empty element')]
+    public function addContentAfterEmptyElement(): void
     {
         $xml = '<root><empty /></root>';
         $exp = '<root><empty />Content</root>';
 
         $actual = XMLTransformer::transformString(
             $xml,
-            function ($tag) {
+            static function ($tag) {
                 if ('empty' === $tag) {
                     return [
                         XMLTransformer::RULE_ADD_AFTER => 'Content',
                     ];
                 }
+
+                return null;
             }
         );
         static::assertSame($exp, $actual);
     }
 
-    /**
-     * @test
-     */
-    public function contentCanBeInsertedBeforeAnEmptyElementThatShouldBeRemoved()
+    #[Test]
+    #[TestDox('Insertion: content can be inserted before an empty element that should be removed')]
+    public function addContentBeforeEmptyElementToBeRemoved(): void
     {
         $xml = '<root><empty /></root>';
         $exp = '<root>Stuff before</root>';
 
         $actual = XMLTransformer::transformString(
             $xml,
-            function ($tag) {
+            static function ($tag) {
                 if ('empty' === $tag) {
                     return [
-                        XMLTransformer::RULE_TAG        => false,
+                        XMLTransformer::RULE_TAG => false,
                         XMLTransformer::RULE_ADD_BEFORE => 'Stuff before',
                     ];
                 }
+
+                return null;
             }
         );
         static::assertSame($exp, $actual);
     }
 
-    /**
-     * @test
-     */
-    public function theCallbackClosureIsGivenTheCorrectTagTypeConstantAsArgument()
+    #[Test]
+    #[TestDox('Insertion: trying to insert content at the beginning of an empty tag throws an exception')]
+    public function throwWhenInsertAtBeginningOfEmptyTag(): void
     {
-        $xml = '<root><a><b>Hello world</b></a><c/></root>';
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('“insstart” does not make sense');
 
-        $actual = XMLTransformer::transformString(
-            $xml,
-            function ($tag, $attributes, $type) {
-                if ($type === XMLTransformer::ELEMENT_OPEN) {
-                    return [
-                        XMLTransformer::RULE_TAG       => false,
-                        XMLTransformer::RULE_ADD_START => "<$tag>",
-                    ];
-                }
-
-                if ($type === XMLTransformer::ELEMENT_CLOSE) {
-                    return [
-                        XMLTransformer::RULE_TAG     => false,
-                        XMLTransformer::RULE_ADD_END => "</$tag>",
-                    ];
-                }
-
-                return [
-                    XMLTransformer::RULE_TAG        => false,
-                    XMLTransformer::RULE_ADD_BEFORE => "<$tag/>",
-                ];
-            }
-        );
-        static::assertSame($xml, $actual);
-    }
-
-    /**
-     * @test
-     * @expectedException \RuntimeException
-     * @expectedExceptionMessage “insstart” does not make sense
-     */
-    public function tryingToInsertContentAtTheBeginningOfAnEmptyTagThrowsAnException()
-    {
         XMLTransformer::transformString(
             '<root><empty /></root>',
-            function () {
+            static function () {
                 return [
-                    XMLTransformer::RULE_TAG       => false,
+                    XMLTransformer::RULE_TAG => false,
                     XMLTransformer::RULE_ADD_START => 'String',
                 ];
             }
         );
     }
 
-    /**
-     * @test
-     * @expectedException \RuntimeException
-     * @expectedExceptionMessage “insend” does not make sense
-     */
-    public function tryingToInsertContentAtTheEndOfAnEmptyTagThrowsAnException()
+    #[Test]
+    #[TestDox('Insertion: trying to insert content at the end of an empty tag throws an exception')]
+    public function throwWhenInsertAtEndOfEmptyTag(): void
     {
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('“insend” does not make sense');
+
         XMLTransformer::transformString(
             '<root><empty /></root>',
-            function () {
+            static function () {
                 return [
-                    XMLTransformer::RULE_TAG     => false,
+                    XMLTransformer::RULE_TAG => false,
                     XMLTransformer::RULE_ADD_END => 'String',
                 ];
             }
         );
     }
 
-    /**
-     * @test
-     */
-    public function anOuterTransformationCallbackGetsTheUnmodifiedContentAsArgument()
+    #[Test]
+    #[TestDox('Transformation: an outer transformation callback gets the unmodified content as argument')]
+    public function applyOuterTransformationArgument(): void
     {
         $xml = '<root><element>Element <tag>content</tag></element></root>';
 
         $actual = XMLTransformer::transformString(
             $xml,
-            function ($tag) {
+            static function ($tag) {
                 if ('element' === $tag) {
                     return [
                         XMLTransformer::RULE_TRANSFORM_OUTER => function ($str) {
                             if ('<element>Element <tag>content</tag></element>' !== $str) {
                                 throw new \UnexpectedValueException('Wrong element content');
                             }
+
                             return $str;
                         },
                     ];
                 }
+
+                return null;
             }
         );
         static::assertSame($xml, $actual);
     }
 
-    /**
-     * @test
-     */
-    public function anOuterTransformationReplacesTheTagAndItsContent()
+    #[Test]
+    #[TestDox('Transformation: an outer transformation replaces the tag and its content')]
+    public function applyOuterTransformation(): void
     {
         $xml = '<root><element a="b">Element <tag>content</tag></element><c/></root>';
 
         $actual = XMLTransformer::transformString(
             $xml,
-            function ($tag) {
+            static function ($tag) {
                 if ('element' === $tag) {
                     return [
-                        XMLTransformer::RULE_TRANSFORM_OUTER => function ($str) {
+                        XMLTransformer::RULE_TRANSFORM_OUTER => function () {
                             return '<foo />';
                         },
                     ];
                 }
+
+                return null;
             }
         );
         static::assertSame('<root><foo /><c /></root>', $actual);
     }
 
-    /**
-     * @test
-     */
-    public function outerContentTransformationWorksWithNestedTagsToBeTransformed()
+    #[Test]
+    #[TestDox('Transformation: outer transformations can be applied to nested tags')]
+    public function applyOuterTransformationWithNestedTags(): void
     {
         $xml = '<root><element abc="def">Foobar <tag>content</tag></element></root>';
 
         $actual = XMLTransformer::transformString(
             $xml,
-            function ($tag) {
+            static function ($tag) {
                 if ('element' === $tag) {
                     return [
                         XMLTransformer::RULE_TRANSFORM_OUTER => function ($str) {
@@ -905,47 +821,66 @@ __EXP1__;
                         },
                     ];
                 }
+
                 return [XMLTransformer::RULE_TAG => false];
             }
         );
         static::assertSame('Hello World', $actual);
     }
 
-    /**
-     * @test
-     */
-    public function anInnerTransformationCallbackGetsTheUnmodifiedContentAsArgument()
+    #[Test]
+    #[TestDox('Transformation: trying to use an outer transformation on an empty tag throws an exception')]
+    public function throwUponOuterTransformForAnEmptyTag(): void
+    {
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('“transformOuter” does not work with empty tags');
+
+        XMLTransformer::transformString(
+            '<root><empty /></root>',
+            static function () {
+                return [
+                    XMLTransformer::RULE_TRANSFORM_OUTER => static fn () => null,
+                ];
+            }
+        );
+    }
+
+    #[Test]
+    #[TestDox('Transformation: an inner transformation callback gets the unmodified content as argument')]
+    public function applyInnerTransformationArgument(): void
     {
         $xml = '<root><element>Element <tag>content</tag></element></root>';
 
         $actual = XMLTransformer::transformString(
             $xml,
-            function ($tag) {
+            static function ($tag) {
                 if ('element' === $tag) {
                     return [
                         XMLTransformer::RULE_TRANSFORM_INNER => function ($str) {
                             if ('Element <tag>content</tag>' !== $str) {
                                 throw new \UnexpectedValueException('Wrong element content');
                             }
+
                             return $str;
                         },
                     ];
                 }
+
+                return null;
             }
         );
         static::assertSame($xml, $actual);
     }
 
-    /**
-     * @test
-     */
-    public function anInnerTransformationKeepsTheTagButReplacesItsContent()
+    #[Test]
+    #[TestDox('Transformation: an inner transformation replaces the tag and its content')]
+    public function applyInnerTransformation(): void
     {
         $xml = '<root><element a="b">Element <tag>content</tag></element><c/></root>';
 
         $actual = XMLTransformer::transformString(
             $xml,
-            function ($tag) {
+            static function ($tag) {
                 if ('element' === $tag) {
                     return [
                         XMLTransformer::RULE_TRANSFORM_INNER => function () {
@@ -953,129 +888,26 @@ __EXP1__;
                         },
                     ];
                 }
+
+                return null;
             }
         );
         static::assertSame('<root><element a="b">Foo</element><c /></root>', $actual);
     }
 
-    /**
-     * @test
-     */
-    public function contentBehindNestedIgnorableTagsIsNotRemoved()
+    #[Test]
+    #[TestDox('Transformation: an inner transformation on an empty tag replaces the tag')]
+    public function emptyTagInnerTransformReplacesTheTag(): void
     {
-        $xml = <<<__XML1__
-<root>
-<a><ignore><b>Blah</b><ignore>content</ignore></ignore><ignore>content</ignore>Xyz</a>
-</root>
-__XML1__;
-
-        $expected = <<<__XML2__
-<root>
-<a>Xyz</a>
-</root>
-__XML2__;
-
         $actual = XMLTransformer::transformString(
-            $xml,
-            function ($tag) {
-                if ('ignore' === $tag) {
-                    return false;
-                }
-
-            }
-        );
-        static::assertSame($expected, $actual);
-    }
-
-    /**
-     * @test
-     */
-    public function escapedSpecialCharactersRemainUnmodifiedInAttributeValues()
-    {
-        $xml      = '<root><test attr="&amp; &lt; &gt;">Foo</test></root>';
-        $expected = '<root><test attr="&amp; &lt; &gt;">Foo</test></root>';
-        $actual   = XMLTransformer::transformString(
-            $xml,
-            function ($tag, $attributes, $opening) {
-                // No modification
-            }
-        );
-        static::assertSame($expected, $actual);
-    }
-
-    /**
-     * @test
-     */
-    public function removingTagsCompletelyWorksWithNestedTags()
-    {
-        $xml = <<<__XML1__
-<a>
-<b><c>X</c></b>
-</a>
-__XML1__;
-
-        $actual = XMLTransformer::transformString(
-            $xml,
-            function ($tag) {
-                switch ($tag) {
-                    case 'a':
-                    case 'c':
-                        return false;
-                }
+            '<root><empty /></root>',
+            static function () {
+                return [
+                    XMLTransformer::RULE_TRANSFORM_INNER => static fn () => 'Hello world',
+                ];
             }
         );
 
-        static::assertSame('', trim($actual));
+        static::assertSame('<root>Hello world</root>', $actual);
     }
-
-    /**
-     * @test
-     */
-    public function entitiesGetSubstituted()
-    {
-        $xml = <<<__XML1__
-<!DOCTYPE dummy
-[
-<!ENTITY w "Works as expected">
-]>
-<root><a>&w;</a></root>
-__XML1__;
-
-        $actual = XMLTransformer::transformString(
-            $xml,
-            function () {
-                return null; // Do not modify anything
-            }
-        );
-
-        static::assertSame('<root><a>Works as expected</a></root>', $actual);
-    }
-}
-
-/**
- * Dummy function used to test using a function as callback
- *
- * @param $tag
- *
- * @return array
- */
-function valid_function($tag)
-{
-    return [
-        XMLTransformer::RULE_TAG       => false,
-        XMLTransformer::RULE_ADD_START => "Callback function was called for <$tag>",
-    ];
-}
-
-/**
- * Dummy function used to test using a function as callback
- *
- * @param $tag
- *
- * @return array
- */
-function valid_function_by_ref($tag, &$attributes)
-{
-    $attributes = [];
-    return null;
 }
