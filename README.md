@@ -1,3 +1,4 @@
+![Build status](https://github.com/BlueM/XMLTransformer/actions/workflows/php.yml/badge.svg)
 
 Overview
 ========
