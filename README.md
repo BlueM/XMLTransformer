@@ -1,4 +1,3 @@
-[![Build Status](https://travis-ci.org/BlueM/XMLTransformer.png)](https://travis-ci.org/BlueM/XMLTransformer)
 
 Overview
 ========
