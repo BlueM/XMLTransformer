@@ -32,7 +32,7 @@ When the input data has to be re-arranged, you are probably better off with XSL-
 
 Installation
 ============
-The recommended way to install this library is through [Composer](https://getcomposer.org). For this, add `"bluem/xmltransformer": "~3.0"` to the requirements in your `composer.json` file. As the library uses [semantic versioning](http://semver.org), you will get fixes and feature additions, but not changes which break the API.
+The recommended way to install this library is through [Composer](https://getcomposer.org): `composer require bluem/xmltransformer`. As the library uses [semantic versioning](http://semver.org), you can define version constraints in `composer.json` so that any non-major updates are allowed.
 
 Alternatively, you can clone the repository using git or download an [archived release](https://github.com/BlueM/XMLTransformer/releases).
 
@@ -250,7 +250,7 @@ This code was written by Carsten Blüm ([www.bluem.net](http://www.bluem.net)) a
 Version history
 ===============
 
-# 3.0 (2024-10-27)
+## 3.0 (2024-10-27)
 * Breaking change: requires PHP 8.2
 * Breaking change (at least theoretically): trying to apply an outer transformation to an empty tag throws an exception. It did not work in previous versions, anyway, but failed silently.
 * General codebase modernization: use modern language features, add PHPStan and php-cs-fixer, fix code style, add typehints, drop redundant doc comments, drop redundant tests
