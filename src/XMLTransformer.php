@@ -5,24 +5,24 @@ namespace BlueM;
 /**
  * Transforms XML into output string using rules returned from a user-supplied callback.
  *
- * @author  Carsten Bluem <carsten@bluem.net>
- * @license http://www.opensource.org/licenses/bsd-license.php BSD 2-Clause License
+ * @author Carsten Bluem <carsten@bluem.net>
+ * @license https://opensource.org/license/BSD-2-Clause BSD 2-Clause License
  */
 class XMLTransformer
 {
-    const ELEMENT_OPEN = 1;
-    const ELEMENT_EMPTY = 2;
-    const ELEMENT_CLOSE = 0;
+    public const ELEMENT_OPEN = 1;
+    public const ELEMENT_EMPTY = 2;
+    public const ELEMENT_CLOSE = 0;
 
-    const RULE_ADD_END = 'insend';
-    const RULE_ADD_AFTER = 'insafter';
-    const RULE_ADD_BEFORE = 'insbefore';
-    const RULE_ADD_START = 'insstart';
-    const RULE_TRANSFORM_INNER = 'transformInner';
-    const RULE_TRANSFORM_OUTER = 'transformOuter';
-    const RULE_TAG = 'tag';
+    public const RULE_ADD_END = 'insend';
+    public const RULE_ADD_AFTER = 'insafter';
+    public const RULE_ADD_BEFORE = 'insbefore';
+    public const RULE_ADD_START = 'insstart';
+    public const RULE_TRANSFORM_INNER = 'transformInner';
+    public const RULE_TRANSFORM_OUTER = 'transformOuter';
+    public const RULE_TAG = 'tag';
 
-    const ALLOWED_ATTRIBUTE_RULES = [
+    protected const ALLOWED_ATTRIBUTE_RULES = [
         self::RULE_ADD_END => true,
         self::RULE_ADD_AFTER => true,
         self::RULE_TRANSFORM_INNER => true,
@@ -32,10 +32,8 @@ class XMLTransformer
     /**
      * Keeps track of whether we are currently in a part of the XML tree that's
      * enclosed by a tag which should be ignored.
-     *
-     * @var int
      */
-    protected $insideIgnorableTag = 0;
+    protected int $insideIgnorableTagCounter = 0;
 
     /**
      * @var callable
@@ -43,21 +41,18 @@ class XMLTransformer
     protected $callback;
 
     /**
-     * Indexed array keeping track of open tags, so closing nodes can
-     * "know" about the opening tags' attributes, too.
-     *
-     * @var array
+     * @var array<array<string, mixed>>
      */
-    protected $stack = [];
+    protected array $attributesStack = [];
 
     /**
      * Stack for keeping track of whether there's a transformer for the current
      * tag or not. Whenever a non-empty tag is opened, a boolean value will be
      * added to the stack and whenever a tag is closed, the last one is removed.
      *
-     * @var array Indexed array
+     * @var array<bool>
      */
-    protected $transformMe = [];
+    protected array $transformMeStack = [];
 
     /**
      * Stack for managing content transformation. Each item is an indexed array
@@ -66,21 +61,16 @@ class XMLTransformer
      * inner transformation), plus in case of an inner transformation:
      * 3 = strlen() of the opening tag (plus "insbefore" value, if applicable).
      *
-     * @var array Indexed array
+     * @var array<array<int, mixed>>
      */
-    protected $transformerStack = [];
+    protected array $transformerStack = [];
 
     /**
      * Holds the resulting XML.
-     *
-     * @var string
      */
-    protected $content = '';
+    protected string $content = '';
 
-    /**
-     * @var bool
-     */
-    private $keepCData;
+    private bool $keepCData;
 
     /**
      * Force static use.
@@ -92,64 +82,57 @@ class XMLTransformer
     /**
      * Performs XML transformation of the string given as argument.
      *
-     * @param string   $xml       XML to transform
-     * @param callable $callback  Callback: function, method or closure
-     * @param bool     $keepCData If false (default: true), CDATA content is not retained
-     *                            as CDATA, but as PCDATA with < and > and & escaped
-     *
-     * @return mixed
+     * @param bool $keepCData If false, CDATA content is not retained as CDATA, but as PCDATA with < and > and & escaped
      *
      * @throws \RuntimeException
      */
-    public static function transformString(string $xml, callable $callback, bool $keepCData = true)
+    public static function transformString(string $xml, callable $callback, bool $keepCData = true): string
     {
-        $xmltr = new static();
+        $transformer = new static();
 
-        $xmltr->callback = $callback;
-        $xmltr->keepCData = $keepCData;
+        $transformer->callback = $callback;
+        $transformer->keepCData = $keepCData;
 
-        $r = new \XMLReader();
-        $r->XML($xml);
-
+        $r = \XMLReader::XML($xml);
         $r->setParserProperty(\XMLReader::SUBST_ENTITIES, true);
 
+        $element = false;
         while ($r->read()) {
             switch ($r->nodeType) {
                 case \XMLReader::ELEMENT:
-                    $xmltr->nodeOpen($r);
+                    $element = true;
+                    $transformer->nodeOpen($r);
                     break;
                 case \XMLReader::END_ELEMENT:
-                    $xmltr->nodeClose($r);
+                    $transformer->nodeClose($r);
                     break;
                 case \XMLReader::SIGNIFICANT_WHITESPACE:
                 case \XMLReader::WHITESPACE:
-                    $xmltr->addNodeContent($r->value);
+                    $transformer->addNodeContent($r->value);
                     break;
                 case \XMLReader::CDATA:
-                    $xmltr->addCDataNodeContent($r->value);
+                    $transformer->addCDataNodeContent($r->value);
                     break;
                 case \XMLReader::TEXT:
-                    $xmltr->addNodeContent(htmlspecialchars($r->value));
+                    $transformer->addNodeContent(htmlspecialchars($r->value));
             }
         }
 
         $r->close();
 
-        return $xmltr->content;
+        return $transformer->content;
     }
 
     /**
      * Method that will be invoked for any opening or empty XML element.
      *
-     * @param \XMLReader $reader
-     *
      * @throws \RuntimeException
      */
-    protected function nodeOpen(\XMLReader $reader)
+    protected function nodeOpen(\XMLReader $reader): void
     {
-        if ($this->insideIgnorableTag) {
+        if ($this->insideIgnorableTagCounter) {
             if (!$reader->isEmptyElement) {
-                ++$this->insideIgnorableTag;
+                ++$this->insideIgnorableTagCounter;
             }
 
             return;
@@ -161,7 +144,7 @@ class XMLTransformer
             $type = self::ELEMENT_EMPTY;
         } else {
             // Remember the attributes, so the closing tag can access them, too
-            $this->stack[] = $attributes;
+            $this->attributesStack[] = $attributes;
             $type = self::ELEMENT_OPEN;
         }
 
@@ -171,7 +154,7 @@ class XMLTransformer
 
         if (false === $rules = $callback($name, $attributes, $type)) {
             if (!$reader->isEmptyElement) {
-                ++$this->insideIgnorableTag;
+                ++$this->insideIgnorableTagCounter;
             }
 
             return; // Nothing to do
@@ -204,26 +187,24 @@ class XMLTransformer
     }
 
     /**
-     * @param string $name       Tag/element name of the untransformed element
-     * @param array  $attributes Tag attributes
-     * @param array  $rules      Processing rules (key "tag" will be removed, if present)
-     * @param int    $tagType
+     * @param string $name Tag/element name of the untransformed element
+     * @param array<string, mixed> $attributes Tag attributes
+     * @param array<string, mixed> $processingRules Processing rules (key "tag" will be removed, if present)
      *
      * @return string Either full opening tag incl. attributes or an empty string, in
      *                case the tag should be removed.
-     *
      */
-    protected function getTag(string $name, array $attributes, array &$rules, int $tagType): string
+    protected function getTag(string $name, array $attributes, array &$processingRules, int $tagType): string
     {
-        $tag = $rules[self::RULE_TAG] ?? $name;
-        unset($rules[self::RULE_TAG]);
+        $tag = $processingRules[self::RULE_TAG] ?? $name;
+        unset($processingRules[self::RULE_TAG]);
 
         if ($tag) {
             if (self::ELEMENT_CLOSE === $tagType) {
                 return "</$tag>";
             }
 
-            $tag = $this->addAttributes($tag, $attributes, $rules);
+            $tag = $this->addAttributes($tag, $attributes, $processingRules);
             if (self::ELEMENT_EMPTY === $tagType) {
                 $tag = str_replace('>', ' />', $tag);
             }
@@ -235,16 +216,14 @@ class XMLTransformer
     }
 
     /**
-     * @param \XMLReader $reader
-     * @param string     $name
-     * @param array      $rules
+     * @param array<string, mixed> $processingRules
      *
      * @throws \RuntimeException
      */
-    protected function checkRules(\XMLReader $reader, string $name, array $rules)
+    protected function checkRules(\XMLReader $reader, string $name, array $processingRules): void
     {
         if ($reader->isEmptyElement) {
-            if (!empty($rules[self::RULE_ADD_END])) {
+            if (array_key_exists(self::RULE_ADD_END, $processingRules)) {
                 throw new \RuntimeException(
                     sprintf(
                         '“%s” does not make sense for empty tags (here: <%s/>). Use “%s”.',
@@ -253,11 +232,25 @@ class XMLTransformer
                 );
             }
 
-            if (!empty($rules[self::RULE_ADD_START])) {
+            if (array_key_exists(self::RULE_ADD_START, $processingRules)) {
                 throw new \RuntimeException(
                     sprintf(
                         '“%s” does not make sense for empty tags (here: <%s/>). Use “%s”.',
                         self::RULE_ADD_START, $name, self::RULE_ADD_BEFORE
+                    )
+                );
+            }
+
+            if (array_key_exists(self::RULE_TRANSFORM_OUTER, $processingRules)) {
+                throw new \RuntimeException(
+                    sprintf(
+                        '“%s” does not work with empty tags (here: <%s/>). If you want to wrap the element '.
+                        'or change it to a non-empty element, Use “%s” and “%s”. If you want to replace '.
+                        'the tag with arbitray content, use “%s”',
+                        self::RULE_TRANSFORM_OUTER, $name,
+                        self::RULE_ADD_BEFORE,
+                        self::RULE_ADD_AFTER,
+                        self::RULE_TRANSFORM_INNER,
                     )
                 );
             }
@@ -266,21 +259,19 @@ class XMLTransformer
 
     /**
      * Method that will be invoked for any closing XML element.
-     *
-     * @param \XMLReader $reader
      */
-    protected function nodeClose(\XMLReader $reader)
+    protected function nodeClose(\XMLReader $reader): void
     {
-        if ($this->insideIgnorableTag) {
-            --$this->insideIgnorableTag;
+        if ($this->insideIgnorableTagCounter) {
+            --$this->insideIgnorableTagCounter;
         }
 
-        if ($this->insideIgnorableTag) {
+        if ($this->insideIgnorableTagCounter) {
             return;
         }
 
-        $attributes = array_pop($this->stack);
-        $transformMe = array_pop($this->transformMe);
+        $attributes = array_pop($this->attributesStack);
+        $transformMe = array_pop($this->transformMeStack);
 
         $name = $reader->prefix ? $reader->prefix.':'.$reader->localName : $reader->localName;
 
@@ -301,9 +292,8 @@ class XMLTransformer
         if ($transformMe) {
             // Finish this tag by transforming its content
             $transformInfo = array_pop($this->transformerStack);
-            $closure = $transformInfo[0];
-            $stackContent = $transformInfo[1];
-            $inner = $transformInfo[2];
+            [$closure, $stackContent, $inner] = $transformInfo;
+
             if ($inner) {
                 // Inner transformation
                 $openingTagLen = $transformInfo[3];
@@ -332,9 +322,9 @@ class XMLTransformer
      *
      * @param string $content String with XML special characters esacaped
      */
-    protected function addNodeContent($content)
+    protected function addNodeContent(string $content): void
     {
-        if ($this->insideIgnorableTag) {
+        if ($this->insideIgnorableTagCounter) {
             return;
         }
 
@@ -349,10 +339,8 @@ class XMLTransformer
 
     /**
      * Saves the node's text content.
-     *
-     * @param string $content CDATA content
      */
-    protected function addCDataNodeContent($content)
+    protected function addCDataNodeContent(string $content): void
     {
         if ($this->keepCData) {
             $this->addNodeContent("<![CDATA[$content]]>");
@@ -364,9 +352,7 @@ class XMLTransformer
     /**
      * Returns the given node's attributes as an associative array.
      *
-     * @param \XMLReader $reader
-     *
-     * @return array
+     * @return array<string, string>
      */
     protected function getAttributes(\XMLReader $reader): array
     {
@@ -389,29 +375,26 @@ class XMLTransformer
     /**
      * Adds attributes to the given tag and returns the resulting opening tag.
      *
-     * @param string $tag        Tag/element name
-     * @param array  $attributes Associative array of attributes
-     * @param array  $rules      Processing rules
-     *
-     * @return string
+     * @param array<string, mixed> $attributes
+     * @param array<string, mixed> $processingRules Processing rules
      *
      * @throws \UnexpectedValueException
      */
-    protected function addAttributes(string $tag, array $attributes, array $rules): string
+    protected function addAttributes(string $tag, array $attributes, array $processingRules): string
     {
         foreach ($attributes as $attrname => $value) {
-            if (array_key_exists("@$attrname", $rules)) {
+            if (array_key_exists("@$attrname", $processingRules)) {
                 // There's a rule for this attribute
-                if (false !== $rules["@$attrname"]) {
-                    if (0 !== strpos($rules["@$attrname"], '@')) {
+                if (false !== $processingRules["@$attrname"]) {
+                    if (!str_starts_with($processingRules["@$attrname"], '@')) {
                         // Returned value does not start with "@" >> Treat as value
-                        $tag .= sprintf(' %s="%s"', $attrname, htmlspecialchars($rules["@$attrname"]));
+                        $tag .= sprintf(' %s="%s"', $attrname, htmlspecialchars($processingRules["@$attrname"]));
                     } else {
                         // Rename attribute
-                        $tag .= sprintf(' %s="%s"', substr($rules["@$attrname"], 1), $value);
+                        $tag .= sprintf(' %s="%s"', substr($processingRules["@$attrname"], 1), $value);
                     }
                 }
-                unset($rules["@$attrname"]);
+                unset($processingRules["@$attrname"]);
             } else {
                 // Default behaviour: copy attribute and value
                 $tag .= sprintf(' %s="%s"', $attrname, htmlspecialchars($value));
@@ -419,10 +402,10 @@ class XMLTransformer
         }
 
         // Loop over remaining keys in $attr (i.e.: attributes added in the callback method)
-        foreach ($rules as $attrname => $value) {
-            if (0 === strpos($attrname, '@')) {
-                if (false !== $value &&
-                    0 !== strpos($value, '@')
+        foreach ($processingRules as $attrname => $value) {
+            if (str_starts_with($attrname, '@')) {
+                if (false !== $value
+                    && !str_starts_with($value, '@')
                 ) {
                     // Add literal value
                     $tag .= sprintf(
@@ -442,29 +425,29 @@ class XMLTransformer
     }
 
     /**
-     * @param array  $rules          Processing rules
+     * @param array<string, mixed> $processingRules
      * @param string $tagPlusContent Full opening tag, including the content to be
      *                               added before, if defined by the processing rules
      */
-    protected function updateTransformationStack(array $rules, $tagPlusContent)
+    protected function updateTransformationStack(array $processingRules, string $tagPlusContent): void
     {
-        if (isset($rules[self::RULE_TRANSFORM_OUTER]) &&
-            $rules[self::RULE_TRANSFORM_OUTER] instanceof \Closure
+        if (isset($processingRules[self::RULE_TRANSFORM_OUTER])
+            && $processingRules[self::RULE_TRANSFORM_OUTER] instanceof \Closure
         ) {
-            $this->transformMe[] = true;
-            $this->transformerStack[] = [$rules[self::RULE_TRANSFORM_OUTER], '', false];
-        } elseif (isset($rules[self::RULE_TRANSFORM_INNER]) &&
-                  $rules[self::RULE_TRANSFORM_INNER] instanceof \Closure
+            $this->transformMeStack[] = true;
+            $this->transformerStack[] = [$processingRules[self::RULE_TRANSFORM_OUTER], '', false];
+        } elseif (isset($processingRules[self::RULE_TRANSFORM_INNER])
+                  && $processingRules[self::RULE_TRANSFORM_INNER] instanceof \Closure
         ) {
-            $this->transformMe[] = true;
+            $this->transformMeStack[] = true;
             $this->transformerStack[] = [
-                $rules[self::RULE_TRANSFORM_INNER],
+                $processingRules[self::RULE_TRANSFORM_INNER],
                 '',
                 true,
                 \strlen($tagPlusContent),
             ];
         } else {
-            $this->transformMe[] = false;
+            $this->transformMeStack[] = false;
         }
     }
 }

@@ -5,10 +5,8 @@ namespace BlueM;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Tests for XMLTransformer
- *
- * @author  Carsten Bluem <carsten@bluem.net>
- * @license http://www.opensource.org/licenses/bsd-license.php BSD 2-Clause License
+ * @author Carsten Bluem <carsten@bluem.net>
+ * @license https://opensource.org/license/BSD-2-Clause BSD 2-Clause License
  */
 class XMLTransformerTest extends TestCase
 {
