@@ -39,7 +39,25 @@ Alternatively, you can clone the repository using git or download an [archived r
 
 Usage
 =====
-You pass the input XML and the name of a callback function or a callback method (specified as usual, using `[$object, 'methodName']` syntax) or an anonymous function / closure to `XMLTransformer`.
+You pass the input XML and a callable to `XMLTransformer`. This can be done in a number of different ways:
+
+```php
+use BlueM\XMLTransformer;
+
+// Anonymous inline function. Here, you can see the signature of the callback function. 
+$resultingString = XMLTransformer::transformString(
+    $inputXml,
+    static function (string $tag, array $attributes, int $type): array|null|false {
+        // ...
+    }
+);
+
+// OR:
+$resultingString = XMLTransformer::transformString($inputXml, [$object, 'someMethod']);
+
+// OR:
+$resultingString = XMLTransformer::transformString($inputXml, $this->someMethod(...));
+```
 
 For each tag (opening, closing or empty) the callback function will be called with the tag’s name, its attributes and information on whether it is an opening, empty or closing tag. Now, your function / method / closure can return one of three things:
 
