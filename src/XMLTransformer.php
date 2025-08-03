@@ -82,6 +82,10 @@ class XMLTransformer
     /**
      * Performs XML transformation of the string given as argument.
      *
+     * The expected signature of $callback is this:
+     *   static function (string $tag, array $attributes, int $type): array|null|false {
+     *   }
+     *
      * @param bool $keepCData If false, CDATA content is not retained as CDATA, but as PCDATA with < and > and & escaped
      *
      * @throws \RuntimeException
